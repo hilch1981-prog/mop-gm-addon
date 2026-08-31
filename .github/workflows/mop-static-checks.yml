@@ -10,7 +10,7 @@ jobs:
   validate:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: Install Lua 5.1
         run: sudo apt-get update && sudo apt-get install -y lua5.1 zip
       - name: Validate project structure and MoP metadata
@@ -25,7 +25,7 @@ jobs:
       - name: Package addon
         run: zip -r AzerothAdminMoP-1.1.0-rc1.zip AzerothAdminMoP
       - name: Upload installable ZIP
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: AzerothAdminMoP-1.1.0-rc1
           path: AzerothAdminMoP-1.1.0-rc1.zip
