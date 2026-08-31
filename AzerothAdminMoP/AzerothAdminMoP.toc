@@ -17,5 +17,6 @@
 
 Locales.lua
 Commands.lua
+CommandSanity.lua
 Core.lua
 UI.lua
