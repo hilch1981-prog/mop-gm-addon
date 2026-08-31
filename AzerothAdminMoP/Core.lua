@@ -2,7 +2,7 @@ local ADDON_NAME = ...
 
 AzerothAdminMoP = AzerothAdminMoP or {}
 local AAM = AzerothAdminMoP
-AAM.version = "1.0.0-rc1"
+AAM.version = "1.1.1-rc1"
 AAM.history = AAM.history or {}
 
 local eventFrame = CreateFrame("Frame")
@@ -17,6 +17,7 @@ eventFrame:SetScript("OnEvent", function(_, event, name)
   db.y = db.y or 0
   db.lastGroup = db.lastGroup or "general"
   db.history = db.history or {}
+  db.dataFavorites = db.dataFavorites or {}
   AAM.history = db.history
 end)
 
@@ -55,11 +56,17 @@ SlashCmdList.AZEROTHADMINMOP = function(msg)
   local lower = string.lower(msg)
   if lower == "show" then AzerothAdminMoPFrame:Show()
   elseif lower == "hide" then AzerothAdminMoPFrame:Hide()
-  elseif lower == "reset" then AAM:ResetPosition(); AAM:Print("panel position reset")
+  elseif lower == "reset" or lower == "resetui" then
+    AAM:ResetPosition()
+    if AAM.ResetMinimapButton then AAM:ResetMinimapButton() end
+    AAM:Print("UI positions reset")
+  elseif lower == "icon" then
+    if AAM.ToggleMinimapButton then AAM:ToggleMinimapButton() end
   elseif lower == "help" then
     AAM:Print("/aamop - toggle panel")
-    AAM:Print("/aamop show | hide | reset | help")
+    AAM:Print("/aamop show | hide | icon | reset | help")
     AAM:Print("/mopgm <.command> - send raw GM command")
   elseif msg ~= "" then AAM:SendCommand(msg)
+  elseif AAM.TogglePanel then AAM:TogglePanel()
   elseif AzerothAdminMoPFrame:IsShown() then AzerothAdminMoPFrame:Hide() else AzerothAdminMoPFrame:Show() end
 end

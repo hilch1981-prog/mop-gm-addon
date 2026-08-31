@@ -49,7 +49,7 @@ dataBrowserButton:SetSize(150, 25)
 dataBrowserButton:SetPoint("TOPRIGHT", -40, -38)
 dataBrowserButton:SetText("MoP SQL 데이터")
 dataBrowserButton:SetScript("OnClick", function()
-  if AAM.ShowDataBrowser then AAM.ShowDataBrowser() end
+  if AAM.ShowDataBrowser then AAM:ShowDataBrowser() end
 end)
 
 local argLabel = frame:CreateFontString(nil, "OVERLAY", "GameFontNormal")

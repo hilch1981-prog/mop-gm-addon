@@ -12,7 +12,7 @@ This repository is the MoP-specific successor to `hilch1981-prog/azerothcore-gm-
 - Primary repack: `hilch1981-prog/MOP_V2_Repack`
 - Repack base: `alexkulya/pandaria_5.4.8`
 - Addon author/maintainer: 취미연구가 (Hobbyist)
-- Current candidate: `1.1.0-rc1`
+- Current candidate: `1.1.1-rc1`
 
 ## What is implemented
 
@@ -21,6 +21,8 @@ The addon now uses a MoP-native command catalog validated against the target rep
 The built-in **MoP SQL Data** browser is generated from the target repack's `world_04_03_2023.zip` and Korean integrated patch. It provides searchable item, quest, creature, and `game_tele` indexes with koKR names preferred when available. Selecting a result sends the matching `.additem`, `.quest add`, `.go creature`, or `.tele` command.
 
 The ordinary Lookup panel remains server-driven through `.lookup`, `.tele`, and `.go`, while the generated browser offers fast offline discovery without importing any WotLK 3.3.5a IDs or coordinates.
+
+The minimap button is created automatically at login, matching the established AzerothAdmin behavior. Left click toggles the GM panel, right click opens teleports, middle click opens favorite teleports, and dragging the button saves its position.
 
 ## Migration status
 
@@ -34,6 +36,7 @@ The ordinary Lookup panel remains server-driven through `.lookup`, `.tele`, and 
 - [x] MoP profession/skill command coverage through `.learn`, `.setskill`, `.maxskill`
 - [x] enUS / koKR / zhCN / zhTW / ruRU UI foundation
 - [x] Saved panel position and local command history
+- [x] Automatic minimap button with saved position and teleport favorites
 - [x] Lua 5.1 syntax + repository static CI
 - [x] WotLK-only runtime datasets excluded
 - [x] Complete Chipa SQL item/quest/creature/teleport browser
@@ -57,7 +60,8 @@ Slash commands:
 - `/aamop` — toggle the panel
 - `/aamop show` — show the panel
 - `/aamop hide` — hide the panel
-- `/aamop reset` — reset panel position
+- `/aamop icon` — show or hide the minimap button for the current session
+- `/aamop reset` — reset the panel and minimap button positions and show the button
 - `/aamop help` — help
 - `/mopgm <command>` — send a raw GM command
 - `/aadb` — toggle the generated Chipa SQL data browser
