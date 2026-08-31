@@ -7,10 +7,11 @@
 ## Notes: GM administration addon for WoW MoP 5.4.8 Build 18414
 ## Notes-koKR: 치파 MOP V2 리팩 대응 GM 관리 애드온
 ## Author: 취미연구가 (Hobbyist)
-## Version: 1.0.0-rc1
+## Version: 1.1.0-rc1
 ## X-Client: WoW 5.4.8 (18414)
 ## X-Core: MOP_V2_Repack / alexkulya pandaria_5.4.8
 ## X-Locale-Packs: enUS, koKR, zhCN, zhTW, ruRU
+## X-Data-Source: MOP_V2_Repack world SQL + koKR integrated patch
 ## SavedVariables: AzerothAdminMoPDB
 ## DefaultState: Enabled
 ## LoadOnDemand: 0
@@ -19,4 +20,10 @@ Locales.lua
 Commands.lua
 CommandSanity.lua
 Core.lua
+Generated\Items.lua
+Generated\Quests.lua
+Generated\Creatures.lua
+Generated\Teleports.lua
+DataBrowser.lua
 UI.lua
+DataBrowserUI.lua
