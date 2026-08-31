@@ -1,0 +1,73 @@
+name: Build Chipa SQL Data
+
+on:
+  push:
+    branches: [main, feature/chipa-sql-data-browser]
+    paths:
+      - '.github/workflows/build-chipa-data.yml'
+      - 'tools/generate_data_lua.py'
+      - 'tests/test_generate_data_lua.py'
+  workflow_dispatch:
+  schedule:
+    - cron: '17 3 * * 1'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: chipa-sql-data-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  build-data:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Download pinned Chipa SQL sources
+        id: source
+        run: |
+          set -euo pipefail
+          source_sha="$(git ls-remote https://github.com/hilch1981-prog/MOP_V2_Repack.git refs/heads/repack-main | cut -f1)"
+          test -n "$source_sha"
+          echo "sha=$source_sha" >> "$GITHUB_OUTPUT"
+          curl -L --fail --retry 3 -o /tmp/world.zip \
+            "https://raw.githubusercontent.com/hilch1981-prog/MOP_V2_Repack/${source_sha}/sql/base/world_04_03_2023.zip"
+          curl -L --fail --retry 3 -o /tmp/korean.sql \
+            "https://media.githubusercontent.com/media/hilch1981-prog/MOP_V2_Repack/${source_sha}/repack/database/korean/%ED%8C%90%EB%8B%A4%EB%A6%AC%EC%95%84_5.4.8_%ED%95%9C%EA%B8%80_%ED%86%B5%ED%95%A9%ED%8C%A8%EC%B9%98.sql"
+          test "$(stat -c%s /tmp/world.zip)" -gt 10000000
+          test "$(stat -c%s /tmp/korean.sql)" -gt 1000000
+
+      - name: Generate Lua indexes without MariaDB
+        run: |
+          python3 tools/generate_data_lua.py \
+            --world-zip /tmp/world.zip \
+            --korean-sql /tmp/korean.sql \
+            --output-dir AzerothAdminMoP/Generated \
+            --source-revision '${{ steps.source.outputs.sha }}'
+
+      - name: Validate parser, addon, and Lua 5.1 syntax
+        run: |
+          python3 -m unittest discover -s tests -p 'test_*.py'
+          python3 tools/validate_mop_addon.py
+          sudo apt-get update >/dev/null
+          sudo apt-get install -y lua5.1 >/dev/null
+          find AzerothAdminMoP/Generated -name '*.lua' -type f -print0 | sort -z | xargs -0 -n1 luac5.1 -p
+
+      - name: Commit regenerated indexes
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add AzerothAdminMoP/Generated
+          if git diff --cached --quiet; then
+            echo 'Generated data is already current.'
+            exit 0
+          fi
+          git commit -m 'Regenerate Chipa MoP SQL browser data [skip ci]'
+          git pull --rebase origin "$GITHUB_REF_NAME"
+          git push origin "HEAD:$GITHUB_REF_NAME"
