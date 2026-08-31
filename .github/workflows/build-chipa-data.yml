@@ -33,11 +33,19 @@ jobs:
       - name: Start MariaDB and import world database
         run: |
           set -euo pipefail
-          docker run -d --name chipa-db -e MARIADB_ROOT_PASSWORD=root -e MARIADB_DATABASE=world mariadb:10.11
-          for i in $(seq 1 60); do
-            if docker exec chipa-db mariadb-admin -uroot -proot ping --silent; then break; fi
+          docker run -d --name chipa-db -e MARIADB_ROOT_PASSWORD=root -e MARIADB_ROOT_HOST=% -e MARIADB_DATABASE=world mariadb:10.11
+          ready=0
+          for i in $(seq 1 90); do
+            if docker exec chipa-db mariadb -uroot -proot -e 'SELECT 1' >/dev/null 2>&1; then
+              ready=1
+              break
+            fi
             sleep 2
           done
+          if [ "$ready" -ne 1 ]; then
+            docker logs chipa-db
+            exit 1
+          fi
           docker exec chipa-db mariadb -uroot -proot -e 'DROP DATABASE IF EXISTS world; CREATE DATABASE world CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;'
           docker exec -i chipa-db mariadb -uroot -proot world < /tmp/world.sql
           docker exec -i chipa-db mariadb --force -uroot -proot world < /tmp/korean.sql || true
