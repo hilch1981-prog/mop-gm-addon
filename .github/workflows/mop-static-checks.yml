@@ -12,7 +12,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Install Lua 5.1
-        run: sudo apt-get update && sudo apt-get install -y lua5.1
+        run: sudo apt-get update && sudo apt-get install -y lua5.1 zip
       - name: Validate project structure and MoP metadata
         run: python3 tools/validate_mop_addon.py
       - name: Parse all runtime Lua files
@@ -20,3 +20,11 @@ jobs:
           while IFS= read -r file; do
             luac5.1 -p "$file"
           done < <(find AzerothAdminMoP -name '*.lua' -type f | sort)
+      - name: Package addon
+        run: zip -r AzerothAdminMoP-1.0.0-rc1.zip AzerothAdminMoP
+      - name: Upload installable ZIP
+        uses: actions/upload-artifact@v4
+        with:
+          name: AzerothAdminMoP-1.0.0-rc1
+          path: AzerothAdminMoP-1.0.0-rc1.zip
+          if-no-files-found: error
