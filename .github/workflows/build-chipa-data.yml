@@ -1,0 +1,91 @@
+name: Build Chipa SQL Data
+
+on:
+  push:
+    branches: [ feature/chipa-sql-data-browser ]
+    paths-ignore:
+      - 'AzerothAdminMoP/Generated/**'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build-data:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Download Chipa SQL sources
+        run: |
+          set -euo pipefail
+          curl -L --fail --retry 3 -o /tmp/world.zip \
+            'https://raw.githubusercontent.com/hilch1981-prog/MOP_V2_Repack/repack-main/sql/base/world_04_03_2023.zip'
+          curl -L --fail --retry 3 -o /tmp/korean.sql \
+            'https://media.githubusercontent.com/media/hilch1981-prog/MOP_V2_Repack/repack-main/repack/database/korean/%ED%8C%90%EB%8B%A4%EB%A6%AC%EC%95%84_5.4.8_%ED%95%9C%EA%B8%80_%ED%86%B5%ED%95%A9%ED%8C%A8%EC%B9%98.sql'
+          SQL_ENTRY="$(unzip -Z1 /tmp/world.zip | grep -E '\.sql$' | head -n 1)"
+          unzip -p /tmp/world.zip "$SQL_ENTRY" > /tmp/world.sql
+          test "$(stat -c%s /tmp/korean.sql)" -gt 1000000
+
+      - name: Start MariaDB and import world database
+        run: |
+          set -euo pipefail
+          docker run -d --name chipa-db -e MARIADB_ROOT_PASSWORD=root -e MARIADB_DATABASE=world mariadb:10.11
+          for i in $(seq 1 60); do
+            if docker exec chipa-db mariadb-admin -uroot -proot ping --silent; then break; fi
+            sleep 2
+          done
+          docker exec chipa-db mariadb -uroot -proot -e 'DROP DATABASE IF EXISTS world; CREATE DATABASE world CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;'
+          docker exec -i chipa-db mariadb -uroot -proot world < /tmp/world.sql
+          docker exec -i chipa-db mariadb --force -uroot -proot world < /tmp/korean.sql || true
+
+      - name: Export compact addon indexes
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/aam-data
+          q() { docker exec chipa-db mariadb -N -B -uroot -proot world -e "$1"; }
+
+          if q "SHOW TABLES LIKE 'locales_item'" | grep -q locales_item; then
+            q "SELECT i.entry, REPLACE(REPLACE(COALESCE(NULLIF(l.name_loc1,''),i.name),CHAR(9),' '),CHAR(10),' '), i.Quality, i.ItemLevel, i.RequiredLevel, i.class FROM item_template i LEFT JOIN locales_item l ON l.entry=i.entry ORDER BY i.entry" > /tmp/aam-data/items.tsv
+          else
+            q "SELECT entry, REPLACE(REPLACE(name,CHAR(9),' '),CHAR(10),' '), Quality, ItemLevel, RequiredLevel, class FROM item_template ORDER BY entry" > /tmp/aam-data/items.tsv
+          fi
+
+          if q "SHOW TABLES LIKE 'locales_quest'" | grep -q locales_quest; then
+            q "SELECT q.Id, REPLACE(REPLACE(COALESCE(NULLIF(l.Title_loc1,''),q.Title),CHAR(9),' '),CHAR(10),' '), q.Level, q.MinLevel, q.ZoneOrSort FROM quest_template q LEFT JOIN locales_quest l ON l.entry=q.Id ORDER BY q.Id" > /tmp/aam-data/quests.tsv
+          else
+            q "SELECT Id, REPLACE(REPLACE(Title,CHAR(9),' '),CHAR(10),' '), Level, MinLevel, ZoneOrSort FROM quest_template ORDER BY Id" > /tmp/aam-data/quests.tsv
+          fi
+
+          if q "SHOW TABLES LIKE 'locales_creature'" | grep -q locales_creature; then
+            q "SELECT c.entry, REPLACE(REPLACE(COALESCE(NULLIF(l.name_loc1,''),c.name),CHAR(9),' '),CHAR(10),' '), c.minlevel, c.maxlevel, c.rank FROM creature_template c LEFT JOIN locales_creature l ON l.entry=c.entry ORDER BY c.entry" > /tmp/aam-data/creatures.tsv
+          else
+            q "SELECT entry, REPLACE(REPLACE(name,CHAR(9),' '),CHAR(10),' '), minlevel, maxlevel, rank FROM creature_template ORDER BY entry" > /tmp/aam-data/creatures.tsv
+          fi
+
+          q "SELECT id, REPLACE(REPLACE(name,CHAR(9),' '),CHAR(10),' '), map, position_x, position_y, position_z FROM game_tele ORDER BY name" > /tmp/aam-data/teleports.tsv
+
+          python3 tools/generate_data_lua.py --input-dir /tmp/aam-data --output-dir AzerothAdminMoP/Generated
+          wc -l AzerothAdminMoP/Generated/*.lua
+
+      - name: Validate generated Lua
+        run: |
+          sudo apt-get update >/dev/null
+          sudo apt-get install -y lua5.1 >/dev/null
+          for f in AzerothAdminMoP/Generated/*.lua; do luac5.1 -p "$f"; done
+
+      - name: Commit generated indexes
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add AzerothAdminMoP/Generated
+          if git diff --cached --quiet; then
+            echo 'Generated data unchanged.'
+            exit 0
+          fi
+          git commit -m 'Generate Chipa MoP SQL browser indexes [skip ci]'
+          git push origin HEAD:feature/chipa-sql-data-browser
