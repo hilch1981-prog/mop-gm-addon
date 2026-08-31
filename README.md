@@ -12,30 +12,32 @@ This repository is the MoP-specific successor to `hilch1981-prog/azerothcore-gm-
 - Primary repack: `hilch1981-prog/MOP_V2_Repack`
 - Repack base: `alexkulya/pandaria_5.4.8`
 - Addon author/maintainer: 취미연구가 (Hobbyist)
+- Current candidate: `1.0.0-rc1`
 
-## Goal
+## What is implemented
 
-Port the released AzerothAdmin 3.3.5a functionality to MoP while preserving the modular architecture and multilingual UI, but replacing client APIs, command metadata, search data and server-specific behavior that are not valid on MoP.
+The addon now uses a MoP-native command catalog validated against the target repack source. The panel provides categorized administration for GM state, cheats, players, character modification, spells/skills, items, lookups, teleports, quests, NPCs and server operations. It also supports direct raw GM commands and keeps a short local command history.
 
-## Important compatibility rule
-
-The 3.3.5a addon is a **feature/reference baseline only**. Files are not copied blindly. Every module must pass a MoP compatibility review before being enabled.
+Search and teleport deliberately use the server's `.lookup`, `.tele` and `.go` facilities rather than importing stale WotLK 3.3.5a IDs and coordinates. This keeps results aligned with the actual MoP world database.
 
 ## Migration status
 
-- [x] Dedicated MoP repository created
-- [x] Target client/build/interface fixed to 5.4.8 / 18414 / 50400
-- [x] Primary repack fixed to MOP_V2_Repack
-- [x] Initial loadable addon skeleton
-- [x] Base command sender and simple GM panel
-- [ ] Command-by-command validation against MOP_V2_Repack
-- [ ] Teleport data migration for MoP zones/raids
-- [ ] Item/NPC/search data migration to MoP IDs
-- [ ] Profession integration migration
-- [ ] PlayerBot integration validation
-- [ ] Full koKR/enUS/zhCN/zhTW/ruRU localization parity
-- [ ] In-game regression test on Chipa MOP V2 repack
-- [ ] First stable release
+- [x] Dedicated MoP repository
+- [x] 5.4.8 / Build 18414 / Interface 50400 metadata
+- [x] Target `MOP_V2_Repack` source audit
+- [x] MoP command runner
+- [x] Categorized GM panel
+- [x] GM / cheats / player / modify / spell / item / lookup / teleport / quest / NPC / server command groups
+- [x] Server-driven MoP item/NPC/quest/spell/teleport search
+- [x] MoP profession/skill command coverage through `.learn`, `.setskill`, `.maxskill`
+- [x] enUS / koKR / zhCN / zhTW / ruRU UI foundation
+- [x] Saved panel position and local command history
+- [x] Lua 5.1 syntax + repository static CI
+- [x] WotLK-only runtime datasets excluded
+- [ ] Real-client 5.4.8 game regression test
+- [ ] PlayerBot controls — waiting for a confirmed PlayerBot implementation in the target repack
+
+The codebase is therefore a **release candidate** rather than a game-certified stable release. See `COMPATIBILITY_REPORT.md` for the exact validation boundary.
 
 ## Install
 
@@ -43,23 +45,26 @@ Copy `AzerothAdminMoP` into:
 
 `World of Warcraft/Interface/AddOns/`
 
-Then start the 5.4.8 client and enable **AzerothAdmin MoP** in the AddOns list.
+Start the 5.4.8 client and enable **AzerothAdmin MoP** in the AddOns list.
 
 Slash commands:
 
-- `/aamop` - toggle the GM panel
-- `/aamop show` - show the panel
-- `/aamop hide` - hide the panel
-- `/aamop reset` - reset panel position
-- `/aamop help` - show help
+- `/aamop` — toggle the panel
+- `/aamop show` — show the panel
+- `/aamop hide` — hide the panel
+- `/aamop reset` — reset panel position
+- `/aamop help` — help
+- `/mopgm <command>` — send a raw GM command
 
-## Development policy
+For commands requiring a parameter, type the parameter in the **Argument** field and then press the corresponding button. The tooltip shows the exact server command and expected argument.
 
-1. MoP client/API compatibility first.
-2. MOP_V2_Repack command behavior is authoritative for server actions.
-3. WotLK-only data and APIs must not be treated as MoP-compatible without verification.
-4. Static validation is not equivalent to in-game validation.
-5. A stable release is created only after game testing on the target repack.
+## Compatibility policy
+
+1. MoP client/API compatibility comes first.
+2. `MOP_V2_Repack` command behavior is authoritative for server actions.
+3. WotLK-only IDs, coordinates and APIs are never assumed compatible.
+4. Static validation is not equivalent to an in-game client/server test.
+5. PlayerBot buttons are not exposed until the target repack actually provides verified PlayerBot commands.
 
 ## Related repositories
 

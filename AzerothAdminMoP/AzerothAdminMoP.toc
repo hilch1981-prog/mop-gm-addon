@@ -1,15 +1,22 @@
 ## Interface: 50400
 ## Title: |cffffd24aAzerothAdmin MoP [5.4.8]|r
 ## Title-koKR: |cffffd24aGM 애드온 [판다리아 5.4.8]|r
+## Title-zhCN: |cffffd24aGM插件 [熊猫人之谜 5.4.8]|r
+## Title-zhTW: |cffffd24aGM插件 [潘達利亞 5.4.8]|r
+## Title-ruRU: |cffffd24aGM-аддон [Pandaria 5.4.8]|r
 ## Notes: GM administration addon for WoW MoP 5.4.8 Build 18414
 ## Notes-koKR: 치파 MOP V2 리팩 대응 GM 관리 애드온
 ## Author: 취미연구가 (Hobbyist)
-## Version: 0.1.0-alpha
+## Version: 1.0.0-rc1
 ## X-Client: WoW 5.4.8 (18414)
 ## X-Core: MOP_V2_Repack / alexkulya pandaria_5.4.8
+## X-Locale-Packs: enUS, koKR, zhCN, zhTW, ruRU
 ## SavedVariables: AzerothAdminMoPDB
 ## DefaultState: Enabled
 ## LoadOnDemand: 0
 
+Locales.lua
+Commands.lua
+CommandSanity.lua
 Core.lua
 UI.lua
