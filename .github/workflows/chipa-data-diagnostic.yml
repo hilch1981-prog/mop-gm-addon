@@ -1,0 +1,30 @@
+name: Chipa SQL Diagnostic
+
+on:
+  push:
+    branches: [ feature/chipa-sql-data-browser ]
+  workflow_dispatch:
+
+jobs:
+  inspect:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download Chipa world and Korean SQL
+        run: |
+          set -euo pipefail
+          curl -L --fail --retry 3 -o /tmp/world.zip \
+            'https://raw.githubusercontent.com/hilch1981-prog/MOP_V2_Repack/repack-main/sql/base/world_04_03_2023.zip'
+          curl -L --fail --retry 3 -o /tmp/korean.sql \
+            'https://raw.githubusercontent.com/hilch1981-prog/MOP_V2_Repack/repack-main/repack/database/korean/%ED%8C%90%EB%8B%A4%EB%A6%AC%EC%95%84_5.4.8_%ED%95%9C%EA%B8%80_%ED%86%B5%ED%95%A9%ED%8C%A8%EC%B9%98.sql'
+          echo "world zip: $(du -h /tmp/world.zip | cut -f1)"
+          echo "korean sql: $(du -h /tmp/korean.sql | cut -f1)"
+          unzip -Z1 /tmp/world.zip | sed -n '1,20p'
+
+      - name: Inspect target table schemas
+        run: |
+          set -euo pipefail
+          SQL_ENTRY="$(unzip -Z1 /tmp/world.zip | grep -E '\.sql$' | head -n 1)"
+          unzip -p /tmp/world.zip "$SQL_ENTRY" > /tmp/world.sql
+          python3 tools/inspect_chipa_sql.py /tmp/world.sql /tmp/korean.sql
