@@ -16,7 +16,7 @@ AAM.CommandGroups = {
   { key="player", label="Player", commands={
     {"Appear", ".appear %s", "player"}, {"Summon", ".summon %s", "player"}, {"Recall", ".recall %s", "player (optional)"},
     {"Revive", ".revive %s", "player (optional)"}, {"Freeze", ".freeze %s", "player [seconds]"}, {"Unfreeze", ".unfreeze %s", "player"},
-    {"PInfo", ".pinfo %s", "player"}, {"Combat stop", ".combatstop %s", "player"}, {"Level up", ".levelup %s", "levels"},
+    {"PInfo", ".pinfo %s", "player (optional)"}, {"Combat stop", ".combatstop %s", "player (optional)"}, {"Level up", ".levelup %s", "levels"},
     {"Character level", ".character level %s", "level"}, {"Rename", ".character rename %s", "player"}, {"Customize", ".character customize %s", "player"},
   }},
   { key="modify", label="Modify", commands={
@@ -66,8 +66,13 @@ end
 
 function AAM:BuildCommand(entry, argument)
   local format = entry[2]
-  if not string.find(format, "%%s", 1, true) then return format end
+  if not string.find(format, "%s", 1, true) then return format end
   argument = (argument or ""):match("^%s*(.-)%s*$")
-  if argument == "" then return nil, entry[3] or "argument required" end
+  if argument == "" then
+    if entry[3] and string.find(entry[3], "optional", 1, true) then
+      return (format:gsub(" %%s", ""))
+    end
+    return nil, entry[3] or "argument required"
+  end
   return string.format(format, argument)
 end
