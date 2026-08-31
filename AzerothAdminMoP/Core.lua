@@ -2,74 +2,64 @@ local ADDON_NAME = ...
 
 AzerothAdminMoP = AzerothAdminMoP or {}
 local AAM = AzerothAdminMoP
-
-AAM.version = "0.1.0-alpha"
-AAM.commands = {
-    { label = "GM ON", command = ".gm on" },
-    { label = "GM OFF", command = ".gm off" },
-    { label = "FLY ON", command = ".gm fly on" },
-    { label = "FLY OFF", command = ".gm fly off" },
-}
+AAM.version = "1.0.0-rc1"
+AAM.history = AAM.history or {}
 
 local eventFrame = CreateFrame("Frame")
 eventFrame:RegisterEvent("ADDON_LOADED")
-eventFrame:SetScript("OnEvent", function(self, event, name)
-    if event ~= "ADDON_LOADED" or name ~= ADDON_NAME then
-        return
-    end
-
-    AzerothAdminMoPDB = AzerothAdminMoPDB or {}
-    AzerothAdminMoPDB.point = AzerothAdminMoPDB.point or "CENTER"
-    AzerothAdminMoPDB.relativePoint = AzerothAdminMoPDB.relativePoint or "CENTER"
-    AzerothAdminMoPDB.x = AzerothAdminMoPDB.x or 0
-    AzerothAdminMoPDB.y = AzerothAdminMoPDB.y or 0
+eventFrame:SetScript("OnEvent", function(_, event, name)
+  if event ~= "ADDON_LOADED" or name ~= ADDON_NAME then return end
+  AzerothAdminMoPDB = AzerothAdminMoPDB or {}
+  local db = AzerothAdminMoPDB
+  db.point = db.point or "CENTER"
+  db.relativePoint = db.relativePoint or "CENTER"
+  db.x = db.x or 0
+  db.y = db.y or 0
+  db.lastGroup = db.lastGroup or "general"
+  db.history = db.history or {}
+  AAM.history = db.history
 end)
 
 function AAM:Print(message)
-    DEFAULT_CHAT_FRAME:AddMessage("|cffffd24aAzerothAdmin MoP:|r " .. tostring(message))
+  DEFAULT_CHAT_FRAME:AddMessage("|cffffd24aAzerothAdmin MoP:|r " .. tostring(message))
 end
 
 function AAM:SendCommand(command)
-    if type(command) ~= "string" or command == "" then
-        return
-    end
-
-    SendChatMessage(command, "SAY")
-    self:Print("sent: " .. command)
+  command = type(command) == "string" and command:match("^%s*(.-)%s*$") or ""
+  if command == "" then return false end
+  if command:sub(1, 1) ~= "." then command = "." .. command end
+  SendChatMessage(command, "SAY")
+  table.insert(self.history, 1, command)
+  while #self.history > 30 do table.remove(self.history) end
+  if AzerothAdminMoPDB then AzerothAdminMoPDB.history = self.history end
+  self:Print((self.L and self.L.sent or "Sent") .. ": " .. command)
+  if self.RefreshHistory then self:RefreshHistory() end
+  return true
 end
 
 function AAM:ResetPosition()
-    if not AzerothAdminMoPFrame then
-        return
-    end
-
-    AzerothAdminMoPFrame:ClearAllPoints()
-    AzerothAdminMoPFrame:SetPoint("CENTER", UIParent, "CENTER", 0, 0)
-    AzerothAdminMoPDB.point = "CENTER"
-    AzerothAdminMoPDB.relativePoint = "CENTER"
-    AzerothAdminMoPDB.x = 0
-    AzerothAdminMoPDB.y = 0
+  local frame = AzerothAdminMoPFrame
+  if not frame then return end
+  frame:ClearAllPoints()
+  frame:SetPoint("CENTER", UIParent, "CENTER", 0, 0)
+  if AzerothAdminMoPDB then
+    AzerothAdminMoPDB.point, AzerothAdminMoPDB.relativePoint = "CENTER", "CENTER"
+    AzerothAdminMoPDB.x, AzerothAdminMoPDB.y = 0, 0
+  end
 end
 
 SLASH_AZEROTHADMINMOP1 = "/aamop"
+SLASH_AZEROTHADMINMOP2 = "/mopgm"
 SlashCmdList.AZEROTHADMINMOP = function(msg)
-    msg = string.lower((msg or ""):match("^%s*(.-)%s*$"))
-
-    if msg == "show" then
-        AzerothAdminMoPFrame:Show()
-    elseif msg == "hide" then
-        AzerothAdminMoPFrame:Hide()
-    elseif msg == "reset" then
-        AAM:ResetPosition()
-        AAM:Print("panel position reset")
-    elseif msg == "help" then
-        AAM:Print("/aamop - toggle panel")
-        AAM:Print("/aamop show | hide | reset | help")
-    else
-        if AzerothAdminMoPFrame:IsShown() then
-            AzerothAdminMoPFrame:Hide()
-        else
-            AzerothAdminMoPFrame:Show()
-        end
-    end
+  msg = (msg or ""):match("^%s*(.-)%s*$")
+  local lower = string.lower(msg)
+  if lower == "show" then AzerothAdminMoPFrame:Show()
+  elseif lower == "hide" then AzerothAdminMoPFrame:Hide()
+  elseif lower == "reset" then AAM:ResetPosition(); AAM:Print("panel position reset")
+  elseif lower == "help" then
+    AAM:Print("/aamop - toggle panel")
+    AAM:Print("/aamop show | hide | reset | help")
+    AAM:Print("/mopgm <.command> - send raw GM command")
+  elseif msg ~= "" then AAM:SendCommand(msg)
+  elseif AzerothAdminMoPFrame:IsShown() then AzerothAdminMoPFrame:Hide() else AzerothAdminMoPFrame:Show() end
 end
