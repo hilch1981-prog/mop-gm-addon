@@ -23,10 +23,10 @@ jobs:
             luac5.1 -p "$file"
           done < <(find AzerothAdminMoP -name '*.lua' -type f | sort)
       - name: Package addon
-        run: zip -r AzerothAdminMoP-1.1.0-rc1.zip AzerothAdminMoP
+        run: zip -r AzerothAdminMoP-1.1.1-rc1.zip AzerothAdminMoP
       - name: Upload installable ZIP
         uses: actions/upload-artifact@v7
         with:
-          name: AzerothAdminMoP-1.1.0-rc1
-          path: AzerothAdminMoP-1.1.0-rc1.zip
+          name: AzerothAdminMoP-1.1.1-rc1
+          path: AzerothAdminMoP-1.1.1-rc1.zip
           if-no-files-found: error

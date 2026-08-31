@@ -16,6 +16,10 @@ if "30300" in text or "3.3.5a" in text:
     errors.append("WotLK metadata leaked into MoP TOC")
 if "Generated\\SourceInfo.lua" not in text:
     errors.append("generated source provenance is not loaded by the TOC")
+if "MinimapButton.lua" not in text:
+    errors.append("automatic minimap button is not loaded by the TOC")
+if "## Version: 1.1.1-rc1" not in text:
+    errors.append("TOC release candidate version is not 1.1.1-rc1")
 
 runtime = []
 for line in text.splitlines():
@@ -49,7 +53,7 @@ if "SLASH_AZEROTHADMINMOP1" not in core:
 ui = (ADDON / "UI.lua").read_text(encoding="utf-8")
 if "AzerothAdminMoPFrame" not in ui or "UIPanelButtonTemplate" not in ui:
     errors.append("main UI frame/buttons missing")
-if "AAM.ShowDataBrowser" not in ui:
+if "AAM:ShowDataBrowser" not in ui:
     errors.append("main UI does not open the SQL data browser")
 
 browser = (ADDON / "DataBrowser.lua").read_text(encoding="utf-8")
@@ -60,6 +64,26 @@ for marker in ("SearchData", ".additem ", ".quest add ", ".go creature ", ".tele
 for marker in ("pageOffset", "searchButton", "previous", "nextPage", "/aadb"):
     if marker not in browser_ui:
         errors.append(f"data browser UI control missing: {marker}")
+for marker in ("ToggleDataFavorite", "currentFavoritesOnly", 'ShowDataBrowser(kind, favoritesOnly)'):
+    if marker not in browser + browser_ui:
+        errors.append(f"teleport favorite behavior missing: {marker}")
+
+minimap = (ADDON / "MinimapButton.lua").read_text(encoding="utf-8")
+for marker in (
+    'CreateFrame("Button", "AzerothAdminMoPMinimapButton", UIParent)',
+    'RegisterForClicks("LeftButtonUp", "RightButtonUp", "MiddleButtonUp")',
+    'eventFrame:RegisterEvent("PLAYER_LOGIN")',
+    'AAM:ShowDataBrowser("Teleports", false)',
+    'AAM:ShowDataBrowser("Teleports", true)',
+    "AzerothAdminMoPDB.minimapX",
+    "AzerothAdminMoPDB.minimapY",
+    "button:Show()",
+):
+    if marker not in minimap:
+        errors.append(f"minimap behavior missing: {marker}")
+for marker in ('lower == "icon"', "ResetMinimapButton", "TogglePanel"):
+    if marker not in core:
+        errors.append(f"minimap slash/control behavior missing: {marker}")
 
 minimum_rows = {"Items": 50000, "Quests": 10000, "Creatures": 10000, "Teleports": 500}
 for name, minimum in minimum_rows.items():

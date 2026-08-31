@@ -5,7 +5,33 @@ local function lower(value)
   return string.lower(tostring(value or ""))
 end
 
-function AAM:SearchData(kind, query, limit, offset)
+function AAM:GetDataFavorites(kind)
+  AzerothAdminMoPDB = AzerothAdminMoPDB or {}
+  AzerothAdminMoPDB.dataFavorites = AzerothAdminMoPDB.dataFavorites or {}
+  AzerothAdminMoPDB.dataFavorites[kind] = AzerothAdminMoPDB.dataFavorites[kind] or {}
+  return AzerothAdminMoPDB.dataFavorites[kind]
+end
+
+function AAM:IsDataFavorite(kind, id)
+  return self:GetDataFavorites(kind)[tostring(tonumber(id) or id or "")] and true or false
+end
+
+function AAM:ToggleDataFavorite(kind, row)
+  if not row then return false end
+  local id = tostring(tonumber(row[1]) or row[1] or "")
+  if id == "" then return false end
+  local favorites = self:GetDataFavorites(kind)
+  if favorites[id] then
+    favorites[id] = nil
+    self:Print((self.L and self.L.favoriteRemoved or "Favorite removed") .. ": " .. tostring(row[2] or id))
+    return false
+  end
+  favorites[id] = true
+  self:Print((self.L and self.L.favoriteAdded or "Favorite added") .. ": " .. tostring(row[2] or id))
+  return true
+end
+
+function AAM:SearchData(kind, query, limit, offset, favoritesOnly)
   local source = self.Data and self.Data[kind]
   if type(source) ~= "table" then return {}, false, 0 end
   query = lower((query or ""):match("^%s*(.-)%s*$"))
@@ -17,7 +43,9 @@ function AAM:SearchData(kind, query, limit, offset)
   for _, row in ipairs(source) do
     local id = tonumber(row[1]) or 0
     local name = tostring(row[2] or "")
-    if query == "" or (numeric and id == numeric) or string.find(lower(name), query, 1, true) then
+    local queryMatches = query == "" or (numeric and id == numeric) or string.find(lower(name), query, 1, true)
+    local favoriteMatches = not favoritesOnly or self:IsDataFavorite(kind, id)
+    if queryMatches and favoriteMatches then
       matched = matched + 1
       if matched > offset then
         if #out >= limit then return out, true, matched end

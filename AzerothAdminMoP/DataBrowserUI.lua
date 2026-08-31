@@ -33,10 +33,12 @@ local kinds = {
   {"Teleports", "순간이동"},
 }
 local currentKind = "Items"
+local currentFavoritesOnly = false
 local results = {}
 local pageOffset = 0
 local pageSize = 12
 local hasMore = false
+local kindExists = { Items=true, Quests=true, Creatures=true, Teleports=true }
 
 local search = CreateFrame("EditBox", "AzerothAdminMoPDataSearch", frame, "InputBoxTemplate")
 search:SetSize(285, 28)
@@ -50,16 +52,23 @@ countText:SetPoint("TOPLEFT", 565, -80)
 local rowButtons = {}
 local function render()
   local matched
-  results, hasMore, matched = AAM:SearchData(currentKind, search:GetText(), pageSize, pageOffset)
+  results, hasMore, matched = AAM:SearchData(currentKind, search:GetText(), pageSize, pageOffset, currentFavoritesOnly)
   local first = #results > 0 and pageOffset + 1 or 0
   local last = pageOffset + #results
-  countText:SetText(string.format("%d-%d / 전체 %d", first, last, #(AAM.Data[currentKind] or {})))
+  if currentFavoritesOnly then
+    countText:SetText(string.format("%d-%d / 즐겨찾기", first, last))
+    subtitle:SetText("즐겨찾기 순간이동  |  우클릭으로 즐겨찾기 해제")
+  else
+    countText:SetText(string.format("%d-%d / 전체 %d", first, last, #(AAM.Data[currentKind] or {})))
+    subtitle:SetText("MOP_V2_Repack world SQL + koKR patch index")
+  end
   for i = 1, pageSize do
     local row = results[i]
     local b = rowButtons[i]
     if row then
       b.row = row
-      b:SetText(AAM:DescribeDataRow(currentKind, row))
+      local favorite = AAM:IsDataFavorite(currentKind, row[1])
+      b:SetText((favorite and "★ " or "") .. AAM:DescribeDataRow(currentKind, row))
       b:Show()
     else
       b.row = nil
@@ -78,8 +87,16 @@ for i = 1, pageSize do
   local b = CreateFrame("Button", nil, frame, "UIPanelButtonTemplate")
   b:SetSize(500, 28)
   b:SetPoint("TOPLEFT", 180, -112 - (i - 1) * 31)
-  b:SetScript("OnClick", function(self)
-    if self.row then AAM:DataAction(currentKind, self.row) end
+  b:RegisterForClicks("LeftButtonUp", "RightButtonUp")
+  b:SetScript("OnClick", function(self, mouseButton)
+    if not self.row then return end
+    if mouseButton == "RightButton" and currentKind == "Teleports" then
+      AAM:ToggleDataFavorite(currentKind, self.row)
+      pageOffset = 0
+      render()
+    else
+      AAM:DataAction(currentKind, self.row)
+    end
   end)
   rowButtons[i] = b
 end
@@ -91,6 +108,7 @@ for i, info in ipairs(kinds) do
   b:SetText(info[2])
   b:SetScript("OnClick", function()
     currentKind = info[1]
+    currentFavoritesOnly = false
     search:SetText("")
     pageOffset = 0
     render()
@@ -118,7 +136,7 @@ local help = frame:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
 help:SetPoint("BOTTOMLEFT", 25, 25)
 help:SetWidth(390)
 help:SetJustifyH("LEFT")
-help:SetText("이름 또는 정확한 ID 입력 후 검색  |  결과 클릭: 아이템 지급 / 퀘스트 추가 / NPC 이동 / 텔레포트 실행")
+help:SetText("이름 또는 정확한 ID 검색  |  좌클릭: 실행  |  순간이동 우클릭: 즐겨찾기 등록/해제")
 
 search:SetScript("OnEnterPressed", function(self) self:ClearFocus(); pageOffset = 0; render() end)
 search:SetScript("OnEscapePressed", function(self) self:ClearFocus() end)
@@ -126,9 +144,14 @@ frame:SetScript("OnShow", function() pageOffset = 0; render() end)
 
 SLASH_AZEROTHADMINMOPDB1 = "/aadb"
 SlashCmdList.AZEROTHADMINMOPDB = function(msg)
-  if frame:IsShown() then frame:Hide() else frame:Show() end
+  if frame:IsShown() then frame:Hide() else AAM:ShowDataBrowser() end
 end
 
-AAM.ShowDataBrowser = function()
+function AAM:ShowDataBrowser(kind, favoritesOnly)
+  if kindExists[kind] then currentKind = kind end
+  currentFavoritesOnly = currentKind == "Teleports" and favoritesOnly and true or false
+  search:SetText("")
+  pageOffset = 0
   frame:Show()
+  render()
 end
