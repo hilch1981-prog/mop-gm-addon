@@ -1,0 +1,22 @@
+name: MoP Addon Static Checks
+
+on:
+  push:
+    branches: [ main, feature/mop-full-port ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Lua 5.1
+        run: sudo apt-get update && sudo apt-get install -y lua5.1
+      - name: Validate project structure and MoP metadata
+        run: python3 tools/validate_mop_addon.py
+      - name: Parse all runtime Lua files
+        run: |
+          while IFS= read -r file; do
+            luac5.1 -p "$file"
+          done < <(find AzerothAdminMoP -name '*.lua' -type f | sort)
