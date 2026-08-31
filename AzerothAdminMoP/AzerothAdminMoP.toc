@@ -24,6 +24,7 @@ Generated\Items.lua
 Generated\Quests.lua
 Generated\Creatures.lua
 Generated\Teleports.lua
+Generated\SourceInfo.lua
 DataBrowser.lua
 UI.lua
 DataBrowserUI.lua

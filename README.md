@@ -12,13 +12,15 @@ This repository is the MoP-specific successor to `hilch1981-prog/azerothcore-gm-
 - Primary repack: `hilch1981-prog/MOP_V2_Repack`
 - Repack base: `alexkulya/pandaria_5.4.8`
 - Addon author/maintainer: 취미연구가 (Hobbyist)
-- Current candidate: `1.0.0-rc1`
+- Current candidate: `1.1.0-rc1`
 
 ## What is implemented
 
 The addon now uses a MoP-native command catalog validated against the target repack source. The panel provides categorized administration for GM state, cheats, players, character modification, spells/skills, items, lookups, teleports, quests, NPCs and server operations. It also supports direct raw GM commands and keeps a short local command history.
 
-Search and teleport deliberately use the server's `.lookup`, `.tele` and `.go` facilities rather than importing stale WotLK 3.3.5a IDs and coordinates. This keeps results aligned with the actual MoP world database.
+The built-in **MoP SQL Data** browser is generated from the target repack's `world_04_03_2023.zip` and Korean integrated patch. It provides searchable item, quest, creature, and `game_tele` indexes with koKR names preferred when available. Selecting a result sends the matching `.additem`, `.quest add`, `.go creature`, or `.tele` command.
+
+The ordinary Lookup panel remains server-driven through `.lookup`, `.tele`, and `.go`, while the generated browser offers fast offline discovery without importing any WotLK 3.3.5a IDs or coordinates.
 
 ## Migration status
 
@@ -34,6 +36,9 @@ Search and teleport deliberately use the server's `.lookup`, `.tele` and `.go` f
 - [x] Saved panel position and local command history
 - [x] Lua 5.1 syntax + repository static CI
 - [x] WotLK-only runtime datasets excluded
+- [x] Complete Chipa SQL item/quest/creature/teleport browser
+- [x] koKR locale overlay from the integrated Korean patch
+- [x] MariaDB-free, reproducible SQL-to-Lua generation pipeline
 - [ ] Real-client 5.4.8 game regression test
 - [ ] PlayerBot controls — waiting for a confirmed PlayerBot implementation in the target repack
 
@@ -55,8 +60,25 @@ Slash commands:
 - `/aamop reset` — reset panel position
 - `/aamop help` — help
 - `/mopgm <command>` — send a raw GM command
+- `/aadb` — toggle the generated Chipa SQL data browser
 
 For commands requiring a parameter, type the parameter in the **Argument** field and then press the corresponding button. The tooltip shows the exact server command and expected argument.
+
+The main panel's **MoP SQL 데이터** button opens the generated data browser. Enter a Korean/English name or exact ID, press **검색**, move through results with **이전/다음**, and click a result to run its GM action.
+
+## Rebuilding the SQL browser
+
+`Build Chipa SQL Data` runs every Monday, can be started manually, and also runs when its extractor changes. It resolves the current `MOP_V2_Repack/repack-main` commit, downloads both SQL sources at that exact SHA, streams only the required tables without MariaDB or Docker, validates minimum row counts and Lua 5.1 syntax, and commits changed files under `AzerothAdminMoP/Generated`.
+
+For a local rebuild:
+
+```powershell
+python tools/generate_data_lua.py `
+  --world-zip world_04_03_2023.zip `
+  --korean-sql 판다리아_5.4.8_한글_통합패치.sql `
+  --output-dir AzerothAdminMoP/Generated `
+  --source-revision <MOP_V2_Repack commit SHA>
+```
 
 ## Compatibility policy
 

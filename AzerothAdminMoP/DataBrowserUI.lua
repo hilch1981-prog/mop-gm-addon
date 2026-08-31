@@ -34,21 +34,27 @@ local kinds = {
 }
 local currentKind = "Items"
 local results = {}
+local pageOffset = 0
+local pageSize = 12
+local hasMore = false
 
 local search = CreateFrame("EditBox", "AzerothAdminMoPDataSearch", frame, "InputBoxTemplate")
-search:SetSize(360, 28)
+search:SetSize(285, 28)
 search:SetPoint("TOPLEFT", 180, -72)
 search:SetAutoFocus(false)
 search:SetMaxLetters(120)
 
 local countText = frame:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
-countText:SetPoint("LEFT", search, "RIGHT", 10, 0)
+countText:SetPoint("TOPLEFT", 565, -80)
 
 local rowButtons = {}
 local function render()
-  results = AAM:SearchData(currentKind, search:GetText(), 50)
-  countText:SetText(string.format("%d / %d", #results, #(AAM.Data[currentKind] or {})))
-  for i = 1, 12 do
+  local matched
+  results, hasMore, matched = AAM:SearchData(currentKind, search:GetText(), pageSize, pageOffset)
+  local first = #results > 0 and pageOffset + 1 or 0
+  local last = pageOffset + #results
+  countText:SetText(string.format("%d-%d / 전체 %d", first, last, #(AAM.Data[currentKind] or {})))
+  for i = 1, pageSize do
     local row = results[i]
     local b = rowButtons[i]
     if row then
@@ -62,7 +68,13 @@ local function render()
   end
 end
 
-for i = 1, 12 do
+local searchButton = CreateFrame("Button", nil, frame, "UIPanelButtonTemplate")
+searchButton:SetSize(80, 28)
+searchButton:SetPoint("LEFT", search, "RIGHT", 8, 0)
+searchButton:SetText("검색")
+searchButton:SetScript("OnClick", function() pageOffset = 0; render() end)
+
+for i = 1, pageSize do
   local b = CreateFrame("Button", nil, frame, "UIPanelButtonTemplate")
   b:SetSize(500, 28)
   b:SetPoint("TOPLEFT", 180, -112 - (i - 1) * 31)
@@ -80,20 +92,37 @@ for i, info in ipairs(kinds) do
   b:SetScript("OnClick", function()
     currentKind = info[1]
     search:SetText("")
+    pageOffset = 0
     render()
   end)
 end
 
+local previous = CreateFrame("Button", nil, frame, "UIPanelButtonTemplate")
+previous:SetSize(90, 26)
+previous:SetPoint("BOTTOMRIGHT", frame, "BOTTOMRIGHT", -125, 25)
+previous:SetText("이전")
+previous:SetScript("OnClick", function()
+  pageOffset = math.max(0, pageOffset - pageSize)
+  render()
+end)
+
+local nextPage = CreateFrame("Button", nil, frame, "UIPanelButtonTemplate")
+nextPage:SetSize(90, 26)
+nextPage:SetPoint("LEFT", previous, "RIGHT", 10, 0)
+nextPage:SetText("다음")
+nextPage:SetScript("OnClick", function()
+  if hasMore then pageOffset = pageOffset + pageSize; render() end
+end)
+
 local help = frame:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
 help:SetPoint("BOTTOMLEFT", 25, 25)
-help:SetWidth(650)
+help:SetWidth(390)
 help:SetJustifyH("LEFT")
-help:SetText("검색: 이름 또는 정확한 ID  |  결과 클릭: 아이템 지급 / 퀘스트 추가 / NPC 위치 이동 / 텔레포트 실행  |  최대 50건 중 12건 표시")
+help:SetText("이름 또는 정확한 ID 입력 후 검색  |  결과 클릭: 아이템 지급 / 퀘스트 추가 / NPC 이동 / 텔레포트 실행")
 
-search:SetScript("OnTextChanged", function() render() end)
-search:SetScript("OnEnterPressed", function(self) self:ClearFocus(); render() end)
+search:SetScript("OnEnterPressed", function(self) self:ClearFocus(); pageOffset = 0; render() end)
 search:SetScript("OnEscapePressed", function(self) self:ClearFocus() end)
-frame:SetScript("OnShow", render)
+frame:SetScript("OnShow", function() pageOffset = 0; render() end)
 
 SLASH_AZEROTHADMINMOPDB1 = "/aadb"
 SlashCmdList.AZEROTHADMINMOPDB = function(msg)

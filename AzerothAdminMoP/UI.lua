@@ -44,6 +44,14 @@ local note = frame:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
 note:SetPoint("TOPLEFT", 22, -43)
 note:SetText(L.note or "MOP_V2_Repack command adapter")
 
+local dataBrowserButton = CreateFrame("Button", nil, frame, "UIPanelButtonTemplate")
+dataBrowserButton:SetSize(150, 25)
+dataBrowserButton:SetPoint("TOPRIGHT", -40, -38)
+dataBrowserButton:SetText("MoP SQL 데이터")
+dataBrowserButton:SetScript("OnClick", function()
+  if AAM.ShowDataBrowser then AAM.ShowDataBrowser() end
+end)
+
 local argLabel = frame:CreateFontString(nil, "OVERLAY", "GameFontNormal")
 argLabel:SetPoint("TOPLEFT", 180, -70)
 argLabel:SetText(L.arg or "Argument")

@@ -5,22 +5,27 @@ local function lower(value)
   return string.lower(tostring(value or ""))
 end
 
-function AAM:SearchData(kind, query, limit)
+function AAM:SearchData(kind, query, limit, offset)
   local source = self.Data and self.Data[kind]
-  if type(source) ~= "table" then return {} end
+  if type(source) ~= "table" then return {}, false, 0 end
   query = lower((query or ""):match("^%s*(.-)%s*$"))
-  limit = tonumber(limit) or 50
+  limit = math.max(1, tonumber(limit) or 12)
+  offset = math.max(0, tonumber(offset) or 0)
   local numeric = tonumber(query)
   local out = {}
+  local matched = 0
   for _, row in ipairs(source) do
     local id = tonumber(row[1]) or 0
     local name = tostring(row[2] or "")
     if query == "" or (numeric and id == numeric) or string.find(lower(name), query, 1, true) then
-      out[#out + 1] = row
-      if #out >= limit then break end
+      matched = matched + 1
+      if matched > offset then
+        if #out >= limit then return out, true, matched end
+        out[#out + 1] = row
+      end
     end
   end
-  return out
+  return out, false, matched
 end
 
 function AAM:DataAction(kind, row)
@@ -31,7 +36,7 @@ function AAM:DataAction(kind, row)
   elseif kind == "Quests" then
     self:SendCommand(".quest add " .. id)
   elseif kind == "Creatures" then
-    self:SendCommand(".go creature id " .. id)
+    self:SendCommand(".go creature " .. id)
   elseif kind == "Teleports" then
     local name = tostring(row[2] or "")
     if name ~= "" then self:SendCommand(".tele " .. name) end
