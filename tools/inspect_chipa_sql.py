@@ -6,10 +6,13 @@ from pathlib import Path
 TARGETS = [
     "item_template",
     "item_template_locale",
+    "locales_item",
     "quest_template",
     "quest_template_locale",
+    "locales_quest",
     "creature_template",
     "creature_template_locale",
+    "locales_creature",
     "game_tele",
 ]
 
@@ -20,7 +23,7 @@ def inspect(path):
     for table in TARGETS:
         m = re.search(r"CREATE TABLE\s+`?" + re.escape(table) + r"`?\s*\((.*?)\)\s*ENGINE=", text, re.S | re.I)
         if m:
-            print(f"\n[{table}]\n{m.group(1)[:8000]}")
+            print(f"\n[{table}]\n{m.group(1)[:12000]}")
             continue
         ins = re.search(r"INSERT INTO\s+`?" + re.escape(table) + r"`?\s*(\([^;]+?\))?\s*VALUES", text, re.S | re.I)
         if ins:
