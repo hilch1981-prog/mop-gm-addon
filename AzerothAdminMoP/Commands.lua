@@ -55,7 +55,7 @@ AAM.CommandGroups = {
     {"Respawn", ".respawn"},
   }},
   { key="server", label="Server", commands={
-    {"Save all", ".saveall"}, {"Server info", ".server info"}, {"Server uptime", ".server uptime"}, {"Server motd", ".server motd"},
+    {"Save all", ".saveall"}, {"Server info", ".server info"}, {"Server motd", ".server motd"},
     {"Reload all", ".reload all"},
   }},
 }
