@@ -44,6 +44,28 @@ for command in required:
     if command not in commands:
         errors.append(f"required command missing: {command}")
 
+# Commands removed by the MOP_V2_Repack source audit must not remain in the
+# source catalog and rely on runtime pruning.
+if ".server uptime" in commands:
+    errors.append("unsupported command leaked into catalog: .server uptime")
+
+# PlayerBot V2 is currently a separate runtime POC. Do not expose donor or
+# guessed command prefixes until the Chipa handler reaches the documented UI gate.
+for command in (".playerbot", ".npcbot"):
+    if command in commands:
+        errors.append(f"unverified PlayerBot command exposed: {command}")
+
+for required_doc in (
+    "AGENTS.md",
+    "CHATGPT_PROJECT_INSTRUCTIONS.md",
+    "DEVELOPMENT_RULES.md",
+    "PROJECT_STATUS.md",
+    "TASKS.md",
+    "PLAYERBOT_COMMAND_AUDIT.md",
+):
+    if not (ROOT / required_doc).is_file():
+        errors.append(f"project guidance missing: {required_doc}")
+
 core = (ADDON / "Core.lua").read_text(encoding="utf-8")
 if 'SendChatMessage(command, "SAY")' not in core:
     errors.append("GM command sender is missing")
