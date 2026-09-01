@@ -18,7 +18,6 @@
 
 Locales.lua
 Commands.lua
-CommandSanity.lua
 Core.lua
 Generated\Items.lua
 Generated\Quests.lua
