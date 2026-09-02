@@ -1,0 +1,80 @@
+name: Build full installer fix
+
+on:
+  push:
+    branches:
+      - ai/chatgpt/build-full-installer-fix
+  workflow_dispatch:
+
+jobs:
+  package:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+
+      - name: Verify full generated MoP data is present
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -s AzerothAdmin/Data/Generated/Items.lua
+          test -s AzerothAdmin/Data/Generated/Quests.lua
+          test -s AzerothAdmin/Data/Generated/Creatures.lua
+          test -s AzerothAdmin/Data/Generated/Teleports.lua
+          test "$(wc -c < AzerothAdmin/Data/Generated/Items.lua)" -gt 4000000
+          test "$(wc -c < AzerothAdmin/Data/Generated/Quests.lua)" -gt 800000
+          test "$(wc -c < AzerothAdmin/Data/Generated/Creatures.lua)" -gt 2300000
+          test "$(wc -c < AzerothAdmin/Data/Generated/Teleports.lua)" -gt 80000
+          du -ah AzerothAdmin/Data/Generated | sort -h
+
+      - name: Run repository regression checks
+        run: python -m unittest discover -s tests -p 'test_*.py' -v
+
+      - name: Install and run Lua 5.1 parser
+        shell: bash
+        run: |
+          set -euo pipefail
+          sudo apt-get update >/dev/null
+          sudo apt-get install -y lua5.1 >/dev/null
+          find AzerothAdmin -type f -name '*.lua' -print0 | sort -z | xargs -0 -n1 luac5.1 -p
+
+      - name: Build uncompressed install ZIP
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p dist
+          python - <<'PY'
+          from pathlib import Path
+          import hashlib
+          import zipfile
+
+          root = Path('AzerothAdmin')
+          out = Path('dist/AzerothAdmin_3.5.0-548-r1-full-data.zip')
+          fixed = (2026, 9, 3, 0, 0, 0)
+          with zipfile.ZipFile(out, 'w', compression=zipfile.ZIP_STORED, allowZip64=True) as zf:
+              for path in sorted(root.rglob('*')):
+                  if not path.is_file():
+                      continue
+                  arc = path.as_posix()
+                  info = zipfile.ZipInfo(arc, fixed)
+                  info.compress_type = zipfile.ZIP_STORED
+                  info.external_attr = 0o100644 << 16
+                  zf.writestr(info, path.read_bytes())
+          digest = hashlib.sha256(out.read_bytes()).hexdigest()
+          Path('dist/AzerothAdmin_3.5.0-548-r1-full-data.sha256').write_text(
+              f'{digest}  {out.name}\n', encoding='utf-8'
+          )
+          print(out, out.stat().st_size, digest)
+          PY
+          unzip -t dist/AzerothAdmin_3.5.0-548-r1-full-data.zip
+          unzip -l dist/AzerothAdmin_3.5.0-548-r1-full-data.zip | tail -5
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: AzerothAdmin-3.5.0-548-r1-full-data
+          path: dist/*
+          if-no-files-found: error
+          compression-level: 0
