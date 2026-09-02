@@ -1,25 +1,54 @@
 ## Interface: 50400
 ## Title: |cffffd24aAzerothAdmin [MoP 5.4.8]|r
 ## Title-koKR: |cffffd24aGM애드온 [판다리아 5.4.8]|r
-## Notes: MoP 5.4.8 GM administration addon - Creator: Hobbyist
-## Notes-koKR: 치파 MoP V2 Repack 우선 대응 GM 관리 애드온 · 제작자: 취미연구가
+## Notes: Full MoP 5.4.8 GM administration addon - Creator: Hobbyist
+## Notes-koKR: 치파 MoP V2 Repack 풀 GM 관리 애드온 · 제작자: 취미연구가
 ## Author: Hobbyist
-## Version: 0.1.0-mop-alpha
+## Version: 0.2.0-mop-full-alpha
 ## X-Client: WoW MoP 5.4.8 (18414)
 ## X-Core: MOP_V2_Repack
 ## X-Port-Reference: AzerothAdmin v3.5.0-335a
+## X-Data-Baseline: 0739d072f8f1f42523f04cca4b2607d88a01def4
 ## SavedVariables: AzerothAdminMoPDB
 ## DefaultState: Enabled
 ## LoadOnDemand: 0
 
 Framework\Bootstrap.lua
 Framework\Localization.lua
+Framework\CommandRegistry.lua
+Framework\DataRegistry.lua
 Locales\enUS.lua
 Locales\koKR.lua
 Modules\Shell\Core.lua
+Data\Generated\SourceInfo.lua
+Data\Generated\Items.lua
+Data\Generated\Quests.lua
+Data\Generated\Creatures.lua
+Data\Generated\Teleports.lua
+Framework\DataBrowser.lua
+Data\Professions\firstaid.lua
+Data\Professions\blacksmithing.lua
+Data\Professions\leatherworking.lua
+Data\Professions\alchemy.lua
+Data\Professions\cooking.lua
+Data\Professions\mining.lua
+Data\Professions\tailoring.lua
+Data\Professions\engineering.lua
+Data\Professions\enchanting.lua
+Data\Professions\jewelcrafting.lua
+Data\Professions\inscription.lua
+Data\Load.lua
+Modules\Language\Module.lua
 Modules\Commands\CommandMeta.lua
 Modules\Commands\Module.lua
 Modules\Teleports\Module.lua
 Modules\Search\Module.lua
+Modules\Creatures\Module.lua
+Modules\ItemBrowser\Module.lua
+Modules\QuestHelper\Module.lua
+Modules\ProfessionInfo\Module.lua
+Modules\Bank\Module.lua
+Modules\Revive\Module.lua
 Modules\PlayerBot\Module.lua
+Modules\Integrations\Module.lua
 Modules\Shell\UI.lua
