@@ -12,4 +12,14 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.x'
-      - run: python tools/static_check.py
+      - name: Install Lua 5.1
+        run: sudo apt-get update >/dev/null && sudo apt-get install -y lua5.1 >/dev/null
+      - name: Run MoP regression tests
+        run: python -m unittest discover -s tests -p 'test_*.py' -v
+      - name: Run static and baseline checks
+        run: |
+          python tools/static_check.py
+          python tools/verify_baseline_contract.py
+      - name: Parse every runtime Lua file as Lua 5.1
+        run: |
+          find AzerothAdmin -name '*.lua' -type f -print0 | sort -z | xargs -0 -n1 luac5.1 -p
