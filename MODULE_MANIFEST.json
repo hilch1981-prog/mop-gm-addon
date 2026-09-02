@@ -1,0 +1,31 @@
+{
+  "schema_version": 1,
+  "target": {
+    "client": "WoW MoP 5.4.8 Build 18414",
+    "interface": 50400,
+    "server_repo": "hilch1981-prog/MOP_V2_Repack",
+    "server_branch": "repack-main",
+    "server_baseline": "0739d072f8f1f42523f04cca4b2607d88a01def4",
+    "port_reference": "hilch1981-prog/azerothcore-gm-addon@v3.5.0-335a"
+  },
+  "modules": {
+    "framework": {"status": "PORTABLE", "p0": true},
+    "language": {"status": "PORTABLE", "p0": true},
+    "shell": {"status": "MOP_ADAPT", "p0": true},
+    "commands": {"status": "MOP_ADAPT", "p0": true},
+    "teleports": {"status": "MOP_ADAPT", "p0": true},
+    "search": {"status": "MOP_ADAPT", "p0": true},
+    "creatures": {"status": "REIMPLEMENT", "p0": false},
+    "quest_helper": {"status": "REIMPLEMENT", "p0": false},
+    "item_browser": {"status": "REIMPLEMENT", "p0": false},
+    "profession_info": {"status": "REIMPLEMENT", "p0": false},
+    "bank": {"status": "MOP_ADAPT", "p0": false},
+    "revive": {"status": "MOP_ADAPT", "p0": false},
+    "integrations": {"status": "REIMPLEMENT", "p0": false},
+    "playerbot": {
+      "status": "BLOCKED_ON_POC",
+      "p0": true,
+      "reason": "G1 build passes exist, but worldserver boot and human smoke are still pending"
+    }
+  }
+}

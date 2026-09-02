@@ -1,0 +1,22 @@
+local A = AzerothAdminMoP
+A:RegisterLocale("koKR", {
+    TITLE = "AzerothAdmin - 판다리아 5.4.8",
+    TAB_COMMANDS = "GM 명령",
+    TAB_TELEPORTS = "텔레포트",
+    TAB_SEARCH = "검색",
+    TAB_PLAYERBOT = "PlayerBot",
+    GM_ON = "GM 켜기",
+    GM_OFF = "GM 끄기",
+    FLY_ON = "비행 켜기",
+    FLY_OFF = "비행 끄기",
+    VISIBLE_ON = "표시 켜기",
+    VISIBLE_OFF = "표시 끄기",
+    CUSTOM_COMMAND = "직접 명령",
+    SEND = "실행",
+    TELE_NAME = "텔레포트 이름",
+    LOOKUP_TEXT = "검색어",
+    ITEM = "아이템",
+    CREATURE = "크리처",
+    QUEST = "퀘스트",
+    PLAYERBOT_BLOCKED = "PlayerBot V2는 서버 POC 진행 중입니다. 빌드는 통과했지만 부팅/실게임 Gate가 아직 남아 있습니다.",
+})

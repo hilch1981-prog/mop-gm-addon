@@ -1,0 +1,22 @@
+local A = AzerothAdminMoP
+A:RegisterLocale("enUS", {
+    TITLE = "AzerothAdmin - MoP 5.4.8",
+    TAB_COMMANDS = "Commands",
+    TAB_TELEPORTS = "Teleports",
+    TAB_SEARCH = "Search",
+    TAB_PLAYERBOT = "PlayerBot",
+    GM_ON = "GM ON",
+    GM_OFF = "GM OFF",
+    FLY_ON = "Fly ON",
+    FLY_OFF = "Fly OFF",
+    VISIBLE_ON = "Visible ON",
+    VISIBLE_OFF = "Visible OFF",
+    CUSTOM_COMMAND = "Custom command",
+    SEND = "Send",
+    TELE_NAME = "Teleport name",
+    LOOKUP_TEXT = "Search text",
+    ITEM = "Item",
+    CREATURE = "Creature",
+    QUEST = "Quest",
+    PLAYERBOT_BLOCKED = "PlayerBot V2 is still a server POC. Builds pass, but boot/game gates are pending.",
+})

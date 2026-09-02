@@ -1,102 +1,49 @@
-# AzerothAdmin MoP
+# AzerothAdmin for MoP 5.4.8
 
-GM administration addon for **World of Warcraft: Mists of Pandaria 5.4.8 (Build 18414 / Interface 50400)**.
+치파 MoP V2 Repack 전용을 우선 목표로 하는 GM 관리 애드온 저장소입니다.
 
-This repository is the MoP-specific successor to `hilch1981-prog/azerothcore-gm-addon` and is intentionally maintained separately from the WotLK 3.3.5a edition.
+## 기준 환경
 
-## Target environment
-
-- Client: WoW MoP 5.4.8
+- Client: World of Warcraft Mists of Pandaria 5.4.8
 - Build: 18414
 - Interface: 50400
-- Primary repack: `hilch1981-prog/MOP_V2_Repack`
-- Repack base: `alexkulya/pandaria_5.4.8`
-- Addon author/maintainer: 취미연구가 (Hobbyist)
-- Current candidate: `1.1.1-rc1`
+- Server Source of Truth: `hilch1981-prog/MOP_V2_Repack`
+- Server branch: `repack-main`
+- Server baseline: `0739d072f8f1f42523f04cca4b2607d88a01def4`
+- Porting reference only: `hilch1981-prog/azerothcore-gm-addon`
+- WotLK reference release: `v3.5.0-335a`
 
-## What is implemented
+이 저장소는 WotLK 애드온과 MoP 서버 본체를 섞지 않습니다.
 
-The addon now uses a MoP-native command catalog validated against the target repack source. The panel provides categorized administration for GM state, cheats, players, character modification, spells/skills, items, lookups, teleports, quests, NPCs and server operations. It also supports direct raw GM commands and keeps a short local command history.
+## 현재 단계
 
-The built-in **MoP SQL Data** browser is generated from the target repack's `world_04_03_2023.zip` and Korean integrated patch. It provides searchable item, quest, creature, and `game_tele` indexes with koKR names preferred when available. Selecting a result sends the matching `.additem`, `.quest add`, `.go creature`, or `.tele` command.
+`0.1.0-mop-alpha / P0 Bootstrap`
 
-The ordinary Lookup panel remains server-driven through `.lookup`, `.tele`, and `.go`, while the generated browser offers fast offline discovery without importing any WotLK 3.3.5a IDs or coordinates.
+현재 포함 범위:
 
-The minimap button is created automatically at login, matching the established AzerothAdmin behavior. Left click toggles the GM panel, right click opens teleports, middle click opens favorite teleports, and dragging the button saves its position.
+- MoP 5.4.8용 TOC (`Interface 50400`)
+- `/aamop` 기본 UI
+- GM 모드 ON/OFF
+- GM 비행 ON/OFF
+- GM 표시/은신 ON/OFF
+- 직접 GM 명령 입력
+- `.tele <name>` 실행 UI
+- `.lookup item|creature|quest <text>` 검색 UI
+- PlayerBot V2 상태 표시(기능은 아직 비활성)
+- 정적 검증 도구 및 GitHub Actions
 
-## Migration status
+## 설치
 
-- [x] Dedicated MoP repository
-- [x] 5.4.8 / Build 18414 / Interface 50400 metadata
-- [x] Target `MOP_V2_Repack` source audit
-- [x] MoP command runner
-- [x] Categorized GM panel
-- [x] GM / cheats / player / modify / spell / item / lookup / teleport / quest / NPC / server command groups
-- [x] Server-driven MoP item/NPC/quest/spell/teleport search
-- [x] MoP profession/skill command coverage through `.learn`, `.setskill`, `.maxskill`
-- [x] enUS / koKR / zhCN / zhTW / ruRU UI foundation
-- [x] Saved panel position and local command history
-- [x] Automatic minimap button with saved position and teleport favorites
-- [x] Lua 5.1 syntax + repository static CI
-- [x] WotLK-only runtime datasets excluded
-- [x] Complete Chipa SQL item/quest/creature/teleport browser
-- [x] koKR locale overlay from the integrated Korean patch
-- [x] MariaDB-free, reproducible SQL-to-Lua generation pipeline
-- [ ] Real-client 5.4.8 game regression test
-- [ ] PlayerBot controls — waiting for a confirmed PlayerBot implementation in the target repack
+`AzerothAdmin/` 폴더를 클라이언트의 다음 경로에 복사합니다.
 
-The codebase is therefore a **release candidate** rather than a game-certified stable release. See `COMPATIBILITY_REPORT.md` for the exact validation boundary.
+`World of Warcraft/Interface/AddOns/AzerothAdmin/`
 
-## Install
+게임에서 `/aamop` 명령으로 창을 엽니다.
 
-Copy `AzerothAdminMoP` into:
+## 중요 원칙
 
-`World of Warcraft/Interface/AddOns/`
+WotLK 3.3.5a의 데이터 파일을 MoP에 그대로 복사하지 않습니다. 아이템, 퀘스트, 전문기술, 크리처, 텔레포트 데이터는 MoP 5.4.8과 치파팩 DB/소스를 기준으로 재검증하거나 재생성합니다.
 
-Start the 5.4.8 client and enable **AzerothAdmin MoP** in the AddOns list.
+PlayerBot V2는 `MOP_V2_Repack` Draft PR #1에서 POC 진행 중입니다. G1의 MODULES=0/1 clean build는 PASS지만 worldserver boot와 human smoke가 아직 PENDING이므로 애드온의 실제 PlayerBot 제어는 비활성 상태로 유지합니다.
 
-Slash commands:
-
-- `/aamop` — toggle the panel
-- `/aamop show` — show the panel
-- `/aamop hide` — hide the panel
-- `/aamop icon` — show or hide the minimap button for the current session
-- `/aamop reset` — reset the panel and minimap button positions and show the button
-- `/aamop help` — help
-- `/mopgm <command>` — send a raw GM command
-- `/aadb` — toggle the generated Chipa SQL data browser
-
-For commands requiring a parameter, type the parameter in the **Argument** field and then press the corresponding button. The tooltip shows the exact server command and expected argument.
-
-The main panel's **MoP SQL 데이터** button opens the generated data browser. Enter a Korean/English name or exact ID, press **검색**, move through results with **이전/다음**, and click a result to run its GM action.
-
-## Rebuilding the SQL browser
-
-`Build Chipa SQL Data` runs every Monday, can be started manually, and also runs when its extractor changes. It resolves the current `MOP_V2_Repack/repack-main` commit, downloads both SQL sources at that exact SHA, streams only the required tables without MariaDB or Docker, validates minimum row counts and Lua 5.1 syntax, and commits changed files under `AzerothAdminMoP/Generated`.
-
-For a local rebuild:
-
-```powershell
-python tools/generate_data_lua.py `
-  --world-zip world_04_03_2023.zip `
-  --korean-sql 판다리아_5.4.8_한글_통합패치.sql `
-  --output-dir AzerothAdminMoP/Generated `
-  --source-revision <MOP_V2_Repack commit SHA>
-```
-
-## Compatibility policy
-
-1. MoP client/API compatibility comes first.
-2. `MOP_V2_Repack` command behavior is authoritative for server actions.
-3. WotLK-only IDs, coordinates and APIs are never assumed compatible.
-4. Static validation is not equivalent to an in-game client/server test.
-5. PlayerBot buttons are not exposed until the target repack actually provides verified PlayerBot commands.
-
-## Related repositories
-
-- WotLK edition: `hilch1981-prog/azerothcore-gm-addon`
-- Target repack: `hilch1981-prog/MOP_V2_Repack`
-
-## License
-
-GPL-3.0. See `LICENSE`.
+상세 진행 상황은 `PROJECT_STATUS.md`, `TASKS.md`, `docs/`를 참고하세요.

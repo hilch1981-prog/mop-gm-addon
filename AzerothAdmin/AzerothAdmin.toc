@@ -1,0 +1,25 @@
+## Interface: 50400
+## Title: |cffffd24aAzerothAdmin [MoP 5.4.8]|r
+## Title-koKR: |cffffd24aGM애드온 [판다리아 5.4.8]|r
+## Notes: MoP 5.4.8 GM administration addon - Creator: Hobbyist
+## Notes-koKR: 치파 MoP V2 Repack 우선 대응 GM 관리 애드온 · 제작자: 취미연구가
+## Author: Hobbyist
+## Version: 0.1.0-mop-alpha
+## X-Client: WoW MoP 5.4.8 (18414)
+## X-Core: MOP_V2_Repack
+## X-Port-Reference: AzerothAdmin v3.5.0-335a
+## SavedVariables: AzerothAdminMoPDB
+## DefaultState: Enabled
+## LoadOnDemand: 0
+
+Framework\Bootstrap.lua
+Framework\Localization.lua
+Locales\enUS.lua
+Locales\koKR.lua
+Modules\Shell\Core.lua
+Modules\Commands\CommandMeta.lua
+Modules\Commands\Module.lua
+Modules\Teleports\Module.lua
+Modules\Search\Module.lua
+Modules\PlayerBot\Module.lua
+Modules\Shell\UI.lua

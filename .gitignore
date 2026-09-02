@@ -1,4 +1,7 @@
-.cache/
+*.zip
+*.sha256
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
 __pycache__/
-*.pyc
-dist/
