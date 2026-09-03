@@ -1,0 +1,58 @@
+name: Extract R5 source-pinned quest and teleport data
+
+on:
+  push:
+    branches:
+      - ai/chatgpt/r5-quest-tele-performance
+    paths:
+      - tools/extract_r5_mop_data.py
+      - .github/workflows/extract-r5-data.yml
+  workflow_dispatch:
+
+jobs:
+  extract:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout addon tools
+        uses: actions/checkout@v4
+
+      - name: Checkout pinned MOP_V2_Repack authority
+        uses: actions/checkout@v4
+        with:
+          repository: hilch1981-prog/MOP_V2_Repack
+          ref: 0739d072f8f1f42523f04cca4b2607d88a01def4
+          path: server
+          fetch-depth: 1
+
+      - name: Extract quest starters, enders, objectives, spawns and Korean game_tele names
+        run: python tools/extract_r5_mop_data.py --server server --out generated-r5
+
+      - name: Verify generated files
+        run: |
+          test -s generated-r5/QuestLocations.lua
+          test -s generated-r5/TeleportDbNames.lua
+          test -s generated-r5/audit.json
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          a=json.loads(Path('generated-r5/audit.json').read_text(encoding='utf-8'))
+          assert a['quest_records'] > 10000, a
+          assert a['quest_starters'] > 10000, a
+          assert a['quest_enders'] > 10000, a
+          assert a['objective_slots'] > 10000, a
+          assert a['teleport_names'] >= 1500, a
+          print(json.dumps(a, ensure_ascii=False, indent=2))
+          PY
+
+      - name: Package extracted source data
+        run: |
+          rm -rf generated-r5/world_extract
+          zip -9 -r R5-source-data.zip generated-r5
+
+      - name: Upload source data artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: r5-source-pinned-quest-tele-data
+          path: R5-source-data.zip
+          if-no-files-found: error
+          retention-days: 7
