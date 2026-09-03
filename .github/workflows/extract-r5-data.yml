@@ -1,4 +1,4 @@
-name: Extract R5 source-pinned quest and teleport data
+name: Extract R7 source-pinned quest and teleport data
 
 on:
   push:
@@ -8,6 +8,7 @@ on:
       - tools/extract_r5_mop_data.py
       - tools/extract_r5_mop_data_v2.py
       - tools/extract_r5_mop_data_v3.py
+      - tools/patch_r7_objective_types.py
       - .github/workflows/extract-r5-data.yml
   workflow_dispatch:
 
@@ -27,22 +28,37 @@ jobs:
           fetch-depth: 1
 
       - name: Extract quest starters, enders, objectives, spawns and game_tele command names
-        run: python tools/extract_r5_mop_data_v3.py --server server --out generated-r5
+        run: python tools/extract_r5_mop_data_v3.py --server server --out generated-r7
+
+      - name: Preserve every MoP quest objective type
+        run: |
+          WORLD_SQL="$(find generated-r7/world_extract -type f -name '*.sql' -print -quit)"
+          test -n "$WORLD_SQL"
+          python tools/patch_r7_objective_types.py \
+            --generator tools/extract_r5_mop_data_v3.py \
+            --world-sql "$WORLD_SQL" \
+            --quest-lua generated-r7/QuestLocations.lua \
+            --audit generated-r7/audit.json
 
       - name: Verify generated files
         run: |
-          test -s generated-r5/QuestLocations.lua
-          test -s generated-r5/TeleportDbNames.lua
-          test -s generated-r5/audit.json
+          test -s generated-r7/QuestLocations.lua
+          test -s generated-r7/TeleportDbNames.lua
+          test -s generated-r7/audit.json
           python - <<'PY'
           import json
+          import re
           from pathlib import Path
-          a=json.loads(Path('generated-r5/audit.json').read_text(encoding='utf-8'))
+          a=json.loads(Path('generated-r7/audit.json').read_text(encoding='utf-8'))
+          q=Path('generated-r7/QuestLocations.lua').read_text(encoding='utf-8')
           assert a['quest_records'] > 15000, a
           assert a['quest_starters'] > 12000, a
           assert a['quest_enders'] > 13000, a
           assert a['objective_slots'] > 17000, a
           assert a['coordinate_objectives'] > 7500, a
+          assert a['objective_types_preserved'] == a['objective_slots'], a
+          assert int(a['objective_type_counts'].get('3', 0)) > 0, a
+          assert len(re.findall(r'\bid=\d+,t=\d+', q)) == a['objective_slots'], a
           assert a['teleport_names'] == 1602, a
           assert a['korean_creature_names'] > 60000, a
           assert a['korean_gameobject_names'] > 900, a
@@ -51,13 +67,13 @@ jobs:
 
       - name: Package extracted source data
         run: |
-          rm -rf generated-r5/world_extract
-          zip -9 -r R5-source-data.zip generated-r5
+          rm -rf generated-r7/world_extract
+          zip -9 -r R7-source-data.zip generated-r7
 
       - name: Upload source data artifact
         uses: actions/upload-artifact@v4
         with:
-          name: r5-source-pinned-quest-tele-data
-          path: R5-source-data.zip
+          name: r7-source-pinned-quest-tele-data
+          path: R7-source-data.zip
           if-no-files-found: error
           retention-days: 7
