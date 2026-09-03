@@ -24,6 +24,29 @@ jobs:
           path: server
           fetch-depth: 1
 
+      - name: Inspect pinned world archive format
+        run: |
+          unzip -l server/sql/base/world_04_03_2023.zip | head -40
+          python - <<'PY'
+          import zipfile
+          from pathlib import Path
+          p=Path('server/sql/base/world_04_03_2023.zip')
+          with zipfile.ZipFile(p) as z:
+              print('members:', z.namelist()[:20])
+              for name in z.namelist():
+                  if name.lower().endswith('.sql'):
+                      raw=z.read(name)[:32768]
+                      print('member', name, 'first bytes', raw[:120])
+                      for enc in ('utf-8-sig','utf-16','latin1'):
+                          try:
+                              text=raw.decode(enc)
+                              print('decoded', enc, repr(text[:400]))
+                              break
+                          except Exception:
+                              pass
+                      break
+          PY
+
       - name: Extract quest starters, enders, objectives, spawns and Korean game_tele names
         run: python tools/extract_r5_mop_data.py --server server --out generated-r5
 
