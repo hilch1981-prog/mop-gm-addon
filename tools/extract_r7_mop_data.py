@@ -59,7 +59,11 @@ def main() -> int:
     quest_path = output_dir / "QuestLocations.lua"
     audit_path = output_dir / "audit.json"
     quest_source = quest_path.read_text(encoding="utf-8")
-    type_values = [int(value) for value in re.findall(r"\bid=\d+,t=(\d+)", quest_source)]
+
+    # Target/spawn records never use a `t` key. Objective records may place the
+    # type after `e` or `i`, so count every standalone `t=<number>` rather than
+    # assuming it immediately follows the objective ID.
+    type_values = [int(value) for value in re.findall(r"(?:^|[,{}])t=(\d+)(?=[,}])", quest_source)]
     counts = collections.Counter(type_values)
     audit = json.loads(audit_path.read_text(encoding="utf-8"))
     audit["objective_types_preserved"] = len(type_values)
