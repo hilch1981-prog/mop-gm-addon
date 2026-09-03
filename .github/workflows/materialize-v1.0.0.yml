@@ -1,0 +1,195 @@
+name: Materialize AzerothAdmin MoP v1.0.0 source
+
+on:
+  push:
+    branches:
+      - release/v1.0.0-stable
+    paths:
+      - .release-seed/v1-delta.part-*
+      - .github/workflows/materialize-v1.0.0.yml
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: materialize-v1.0.0
+  cancel-in-progress: false
+
+jobs:
+  materialize:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout release seed
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Preserve the large generated DB tables already on main
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/base-generated
+          for file in Items.lua Quests.lua Creatures.lua Teleports.lua; do
+            test -s "AzerothAdmin/Data/Generated/${file}"
+            cp "AzerothAdmin/Data/Generated/${file}" "/tmp/base-generated/${file}"
+          done
+
+      - name: Reconstruct and apply the validated v1 source delta
+        run: |
+          set -euo pipefail
+          cat .release-seed/v1-delta.part-* > /tmp/v1-delta.tar.xz
+          echo "033ba904aa48353a585131c946bac12d0ba91d8c80f43a83c0165d8870893111  /tmp/v1-delta.tar.xz" | sha256sum -c -
+          rm -rf AzerothAdmin tests tools .github/workflows docs/releases/v1.0.0 release/v1.0.0
+          tar -xJf /tmp/v1-delta.tar.xz -C .
+          mkdir -p AzerothAdmin/Data/Generated
+          cp /tmp/base-generated/*.lua AzerothAdmin/Data/Generated/
+          sed -i 's/AzerothAdminMoP/AzerothAdminMoP548/g' \
+            AzerothAdmin/Data/Generated/Items.lua \
+            AzerothAdmin/Data/Generated/Quests.lua \
+            AzerothAdmin/Data/Generated/Creatures.lua \
+            AzerothAdmin/Data/Generated/Teleports.lua
+
+      - name: Fetch the source-pinned R7 data extractors
+        run: |
+          set -euo pipefail
+          git fetch origin \
+            ai/chatgpt/r5-quest-tele-performance:refs/remotes/origin/ai/chatgpt/r5-quest-tele-performance
+          mkdir -p /tmp/r7-tools tools
+          for file in \
+            extract_r5_mop_data.py \
+            extract_r5_mop_data_v2.py \
+            extract_r5_mop_data_v3.py \
+            extract_r7_mop_data.py \
+            patch_r7_objective_types.py; do
+            git show "origin/ai/chatgpt/r5-quest-tele-performance:tools/${file}" > "/tmp/r7-tools/${file}"
+            cp "/tmp/r7-tools/${file}" "tools/${file}"
+          done
+
+      - name: Checkout the pinned MOP_V2_Repack authority
+        uses: actions/checkout@v4
+        with:
+          repository: hilch1981-prog/MOP_V2_Repack
+          ref: 0739d072f8f1f42523f04cca4b2607d88a01def4
+          path: server
+          fetch-depth: 1
+
+      - name: Regenerate authoritative quest navigation data
+        run: |
+          set -euo pipefail
+          python /tmp/r7-tools/extract_r7_mop_data.py --server server --out /tmp/generated-r7
+          test -s /tmp/generated-r7/QuestLocations.lua
+          test -s /tmp/generated-r7/TeleportDbNames.lua
+          test -s /tmp/generated-r7/audit.json
+          cp /tmp/generated-r7/QuestLocations.lua AzerothAdmin/Data/MoP/QuestLocations.lua
+          cp /tmp/generated-r7/TeleportDbNames.lua AzerothAdmin/Data/MoP/TeleportDbNames.lua
+          cp /tmp/generated-r7/audit.json AzerothAdmin/Data/MoP/QuestLocationAudit.json
+
+      - name: Repair release workflows and add an explicit publish trigger
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          from pathlib import Path
+
+          for relative in (
+              '.github/workflows/static-checks.yml',
+              '.github/workflows/publish-v1.0.0.yml',
+          ):
+              path = Path(relative)
+              lines = path.read_text(encoding='utf-8').splitlines()
+              fixed = []
+              for line in lines:
+                  if 'print(addon / line.replace' in line:
+                      indent = line[: len(line) - len(line.lstrip())]
+                      line = indent + "print(addon / line.replace(chr(92), '/'))"
+                  fixed.append(line)
+              if relative.endswith('publish-v1.0.0.yml'):
+                  marker = '      - release/v1.0.0/RELEASE_READY'
+                  trigger = '      - release/v1.0.0/PUBLISH_TRIGGER'
+                  if marker in fixed and trigger not in fixed:
+                      fixed.insert(fixed.index(marker) + 1, trigger)
+              path.write_text('\n'.join(fixed) + '\n', encoding='utf-8')
+          PY
+
+      - name: Regenerate the per-file addon manifest
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          from pathlib import Path
+          import hashlib
+
+          addon = Path('AzerothAdmin')
+          manifest = addon / 'FILE_MANIFEST.sha256'
+          rows = []
+          for path in sorted(item for item in addon.rglob('*') if item.is_file() and item != manifest):
+              rows.append(f"{hashlib.sha256(path.read_bytes()).hexdigest()}  {path.relative_to(addon).as_posix()}")
+          manifest.write_text('\n'.join(rows) + '\n', encoding='utf-8')
+          print('manifest_entries', len(rows))
+          if len(rows) != 79:
+              raise SystemExit(f'expected 79 addon manifest entries, got {len(rows)}')
+          PY
+
+      - name: Remove one-time seed and checkout artifacts
+        run: |
+          set -euo pipefail
+          rm -rf .release-seed .github/workflows/materialize-v1.0.0.yml server dist
+
+      - name: Install Lua 5.1
+        run: |
+          sudo apt-get update >/dev/null
+          sudo apt-get install -y lua5.1 >/dev/null
+
+      - name: Verify stable release contract and regression suite
+        run: |
+          set -euo pipefail
+          python tools/verify_v1_release.py
+          python -m unittest discover -s tests -p 'test_*.py' -v
+          python - <<'PY' > /tmp/toc-lua.txt
+          from pathlib import Path
+          addon = Path('AzerothAdmin')
+          for raw in (addon / 'AzerothAdmin.toc').read_text(encoding='utf-8').splitlines():
+              line = raw.strip()
+              if line and not line.startswith('##') and line.lower().endswith('.lua'):
+                  print(addon / line.replace(chr(92), '/'))
+          PY
+          while IFS= read -r file; do luac5.1 -p "$file"; done < /tmp/toc-lua.txt
+          lua5.1 tests/mock_wow_v1.lua AzerothAdmin Horde
+          lua5.1 tests/mock_wow_v1.lua AzerothAdmin Alliance
+
+      - name: Build and byte-verify the first stable installer
+        run: |
+          set -euo pipefail
+          python tools/build_release.py --output dist
+          ZIP=dist/AzerothAdmin_MoP_5.4.8_v1.0.0.zip
+          test "$(stat -c %s "$ZIP")" = "16172791"
+          echo "ed49f93eab8afcb5870a679597c678485a6769dca562b194349f4ab9c1033e3e  $ZIP" | sha256sum -c -
+          {
+            echo 'version=1.0.0'
+            echo 'tag=v1.0.0'
+            echo 'channel=stable'
+            echo "bytes=$(stat -c %s "$ZIP")"
+            echo "sha256=$(sha256sum "$ZIP" | awk '{print $1}')"
+          } > release/v1.0.0/BUILD_INFO.txt
+
+      - name: Upload validated installer candidate
+        uses: actions/upload-artifact@v4
+        with:
+          name: AzerothAdmin-MoP-5.4.8-v1.0.0-materialized
+          path: |
+            dist/AzerothAdmin_MoP_5.4.8_v1.0.0.zip
+            dist/AzerothAdmin_MoP_5.4.8_v1.0.0.zip.sha256
+          if-no-files-found: error
+          retention-days: 90
+
+      - name: Commit the materialized stable source
+        run: |
+          set -euo pipefail
+          rm -rf dist
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          if git diff --cached --quiet; then
+            echo 'No source changes were materialized.' >&2
+            exit 1
+          fi
+          git commit -m "Materialize AzerothAdmin MoP v1.0.0 stable source"
+          git push origin "HEAD:${GITHUB_REF_NAME}"
