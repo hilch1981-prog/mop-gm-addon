@@ -7,6 +7,7 @@ on:
     paths:
       - tools/extract_r5_mop_data.py
       - tools/extract_r5_mop_data_v2.py
+      - tools/extract_r5_mop_data_v3.py
       - .github/workflows/extract-r5-data.yml
   workflow_dispatch:
 
@@ -25,8 +26,8 @@ jobs:
           path: server
           fetch-depth: 1
 
-      - name: Extract quest starters, enders, objectives, spawns and Korean game_tele names
-        run: python tools/extract_r5_mop_data_v2.py --server server --out generated-r5
+      - name: Extract quest starters, enders, objectives, spawns and game_tele command names
+        run: python tools/extract_r5_mop_data_v3.py --server server --out generated-r5
 
       - name: Verify generated files
         run: |
@@ -37,11 +38,14 @@ jobs:
           import json
           from pathlib import Path
           a=json.loads(Path('generated-r5/audit.json').read_text(encoding='utf-8'))
-          assert a['quest_records'] > 10000, a
+          assert a['quest_records'] > 15000, a
           assert a['quest_starters'] > 10000, a
           assert a['quest_enders'] > 10000, a
-          assert a['objective_slots'] > 10000, a
-          assert a['teleport_names'] >= 1500, a
+          assert a['objective_slots'] > 25000, a
+          assert a['coordinate_objectives'] > 10000, a
+          assert a['teleport_names'] == 1602, a
+          assert a['korean_creature_names'] > 30000, a
+          assert a['korean_gameobject_names'] > 10000, a
           print(json.dumps(a, ensure_ascii=False, indent=2))
           PY
 
