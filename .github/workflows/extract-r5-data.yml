@@ -8,7 +8,7 @@ on:
       - tools/extract_r5_mop_data.py
       - tools/extract_r5_mop_data_v2.py
       - tools/extract_r5_mop_data_v3.py
-      - tools/patch_r7_objective_types.py
+      - tools/extract_r7_mop_data.py
       - .github/workflows/extract-r5-data.yml
   workflow_dispatch:
 
@@ -27,18 +27,8 @@ jobs:
           path: server
           fetch-depth: 1
 
-      - name: Extract quest starters, enders, objectives, spawns and game_tele command names
-        run: python tools/extract_r5_mop_data_v3.py --server server --out generated-r7
-
-      - name: Preserve every MoP quest objective type
-        run: |
-          WORLD_SQL="$(find generated-r7/world_extract -type f -name '*.sql' -print -quit)"
-          test -n "$WORLD_SQL"
-          python tools/patch_r7_objective_types.py \
-            --generator tools/extract_r5_mop_data_v3.py \
-            --world-sql "$WORLD_SQL" \
-            --quest-lua generated-r7/QuestLocations.lua \
-            --audit generated-r7/audit.json
+      - name: Extract quest starters, enders, typed objectives, spawns and game_tele command names
+        run: python tools/extract_r7_mop_data.py --server server --out generated-r7
 
       - name: Verify generated files
         run: |
