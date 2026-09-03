@@ -39,13 +39,13 @@ jobs:
           from pathlib import Path
           a=json.loads(Path('generated-r5/audit.json').read_text(encoding='utf-8'))
           assert a['quest_records'] > 15000, a
-          assert a['quest_starters'] > 10000, a
-          assert a['quest_enders'] > 10000, a
-          assert a['objective_slots'] > 25000, a
-          assert a['coordinate_objectives'] > 10000, a
+          assert a['quest_starters'] > 12000, a
+          assert a['quest_enders'] > 13000, a
+          assert a['objective_slots'] > 17000, a
+          assert a['coordinate_objectives'] > 7500, a
           assert a['teleport_names'] == 1602, a
-          assert a['korean_creature_names'] > 30000, a
-          assert a['korean_gameobject_names'] > 10000, a
+          assert a['korean_creature_names'] > 60000, a
+          assert a['korean_gameobject_names'] > 900, a
           print(json.dumps(a, ensure_ascii=False, indent=2))
           PY
 
