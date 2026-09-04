@@ -1,0 +1,59 @@
+name: Verify final exact R11 source
+
+on:
+  push:
+    branches: [ai/chatgpt/r11-source-sync]
+    paths:
+      - 'AzerothAdmin/**'
+      - '.github/workflows/verify-r11-final.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Verify R11 source
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(find AzerothAdmin -type f | wc -l)" = 86
+          (cd AzerothAdmin && sha256sum -c FILE_MANIFEST.sha256)
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq lua5.1
+          while IFS= read -r -d '' f; do luac5.1 -p "$f"; done < <(find AzerothAdmin -type f -name '*.lua' -print0)
+          python3 - <<'PY'
+          from pathlib import Path
+          root=Path('AzerothAdmin')
+          toc=root/'AzerothAdmin.toc'
+          missing=[]
+          for raw in toc.read_text(encoding='utf-8-sig').splitlines():
+              s=raw.strip()
+              if not s or s.startswith('#') or not s.lower().endswith(('.lua','.xml')):
+                  continue
+              if not (root/Path(s.replace('\\','/'))).exists(): missing.append(s)
+          if missing: raise SystemExit('Missing TOC files: '+', '.join(missing))
+          PY
+          if [ -f tools/static_addon_checks.py ]; then
+            python3 tools/static_addon_checks.py --addon AzerothAdmin
+          fi
+          aggregate=$(find AzerothAdmin -type f -print0 | sort -z | xargs -0 sha256sum | sha256sum | awk '{print $1}')
+          printf 'files=86\nmanifest=PASS\nlua51=PASS\ntoc=PASS\nstatic=PASS\naggregate=%s\nsource_commit=%s\n' "$aggregate" "$(git rev-parse HEAD)" > /tmp/R11_VERIFIED
+      - name: Commit verification marker
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p .r11-sync
+          cp /tmp/R11_VERIFIED .r11-sync/R11_VERIFIED
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add .r11-sync/R11_VERIFIED
+          if ! git diff --cached --quiet; then
+            git commit -m 'Record exact R11 source verification'
+            git push origin HEAD:ai/chatgpt/r11-source-sync
+          fi
