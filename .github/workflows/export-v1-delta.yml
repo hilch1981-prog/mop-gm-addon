@@ -1,0 +1,38 @@
+name: Export v1 delta source snapshot
+
+on:
+  push:
+    branches:
+      - ai/chatgpt/r11-source-sync
+    paths:
+      - '.github/workflows/export-v1-delta.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  export:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Reconstruct retained v1 delta
+        run: |
+          set -euo pipefail
+          git fetch origin release/v1.0.0-stable:refs/remotes/origin/release/v1.0.0-stable
+          mkdir -p /tmp/v1-seed /tmp/v1-delta
+          for n in 000 001 002 003; do
+            git show "origin/release/v1.0.0-stable:.release-seed/v1-delta.part-${n}" > "/tmp/v1-seed/part-${n}"
+          done
+          cat /tmp/v1-seed/part-* > /tmp/v1-delta.tar.xz
+          echo '033ba904aa48353a585131c946bac12d0ba91d8c80f43a83c0165d8870893111  /tmp/v1-delta.tar.xz' | sha256sum -c -
+          tar -xJf /tmp/v1-delta.tar.xz -C /tmp/v1-delta
+          tar -cJf v1-delta-source.tar.xz -C /tmp/v1-delta .
+      - uses: actions/upload-artifact@v4
+        with:
+          name: v1-delta-source-snapshot
+          path: v1-delta-source.tar.xz
+          if-no-files-found: error
+          retention-days: 7
