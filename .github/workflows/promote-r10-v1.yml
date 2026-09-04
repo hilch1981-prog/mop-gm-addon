@@ -1,4 +1,4 @@
-name: Promote R10 to v1.0.0 source
+name: Promote R10 v1 source
 
 on:
   push:
@@ -19,203 +19,46 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-      - name: Stop when bootstrap payload is already consumed
+      - name: Check bootstrap payload
         id: gate
-        shell: bash
         run: |
-          if [[ ! -f .release-bootstrap/r10-source.part-00 ]]; then
-            echo 'ready=false' >> "$GITHUB_OUTPUT"
-            echo 'R10 source already promoted; nothing to do.'
+          if test -f .release-bootstrap/r10-source.part-00; then
+            echo "ready=true" >> "$GITHUB_OUTPUT"
           else
-            echo 'ready=true' >> "$GITHUB_OUTPUT"
+            echo "ready=false" >> "$GITHUB_OUTPUT"
           fi
-      - name: Reconstruct game-tested R10 source
+      - name: Reconstruct R10 source
         if: steps.gate.outputs.ready == 'true'
-        shell: bash
         run: |
           cat .release-bootstrap/r10-source.part-* > /tmp/r10-source.zip
-          echo '8f76b9fc66eda0692df43219b70cc2611ee6f6952dcaa0890cba3c2aa72c5e58  /tmp/r10-source.zip' | sha256sum -c -
+          echo "8f76b9fc66eda0692df43219b70cc2611ee6f6952dcaa0890cba3c2aa72c5e58  /tmp/r10-source.zip" | sha256sum -c -
           rm -rf AzerothAdmin
           unzip -q /tmp/r10-source.zip -d .
           test -f AzerothAdmin/AzerothAdmin.toc
-      - name: Promote metadata to first stable release
+      - name: Promote metadata
         if: steps.gate.outputs.ready == 'true'
-        shell: bash
-        run: |
-          python - <<'PY'
-          from pathlib import Path
-          import hashlib
-
-          root = Path('AzerothAdmin')
-          replacements = {
-              root/'AzerothAdmin.toc': [
-                  ('## Version: 3.5.0-548-r10-feedback-rc10', '## Version: 1.0.0'),
-                  ('## X-Test-Build-Date: 2026-09-04', '## X-Release-Date: 2026-09-04'),
-                  ('## X-Release-Channel: prerelease', '## X-Release-Channel: stable'),
-              ],
-              root/'Framework/Bootstrap.lua': [
-                  ('A.version = "3.5.0-548-r10-feedback-rc10"', 'A.version = "1.0.0"'),
-              ],
-              root/'Data/MoP/SourceInfo.lua': [
-                  ('release = "3.5.0-548-r10-feedback-rc10"', 'release = "1.0.0"'),
-              ],
-              root/'Modules/Verification/StaticChecks.lua': [
-                  ('version = "3.5.0-548-r10-feedback-rc10"', 'version = "1.0.0"'),
-              ],
-          }
-          for path, pairs in replacements.items():
-              text = path.read_text(encoding='utf-8')
-              for old, new in pairs:
-                  if old not in text:
-                      raise SystemExit(f'missing promotion marker in {path}: {old}')
-                  text = text.replace(old, new)
-              path.write_text(text, encoding='utf-8', newline='\n')
-
-          readme = root/'README_KR.txt'
-          text = readme.read_text(encoding='utf-8')
-          if text.startswith('AzerothAdmin 3.5.0-548-r10-feedback-rc10'):
-              text = text.replace('AzerothAdmin 3.5.0-548-r10-feedback-rc10', 'AzerothAdmin 1.0.0', 1)
-          readme.write_text(text, encoding='utf-8', newline='\n')
-
-          toc = root/'AzerothAdmin.toc'
-          text = toc.read_text(encoding='utf-8')
-          marker = '## X-Release-Channel: stable\n'
-          text = text.replace(marker, marker + '## X-Release-Tag: v1.0.0\n## X-Release-Source: R10 game-tested candidate\n', 1)
-          toc.write_text(text, encoding='utf-8', newline='\n')
-
-          notes = Path('docs/releases/v1.0.0')
-          notes.mkdir(parents=True, exist_ok=True)
-          (notes/'RELEASE_NOTES.md').write_text('''# AzerothAdmin MoP 5.4.8 v1.0.0
-
-첫 공식 안정 릴리즈입니다.
-
-## 기준
-
-- Client: WoW MoP 5.4.8 Build 18414 / Interface 50400
-- Canonical UI: AzerothAdmin 3.5.0-335a
-- Server authority: MOP_V2_Repack
-- Server baseline: 0739d072f8f1f42523f04cca4b2607d88a01def4
-- Operator access value used in the game-tested environment: 9
-- Source candidate: R10 game-tested build
-
-## 주요 기능
-
-- 정본형 GM 메뉴, 미니바, 미니맵 버튼, 뒤로가기와 다국어 전환
-- 아이템 80,072개, 퀘스트 18,144개, 크리처 57,526개
-- 서버 game_tele 1,602개 중 ScottTest 제외 1,601개 선택 가능
-- 순간이동 한국어 표시, 대륙/지역·목적지·레벨·진영 정렬, 내 진영 필터, 즐겨찾기
-- 퀘스트 시작/종료/목표 이동과 현지화 이름 기반 NPC·오브젝트·아이템 찾기
-- 전문기술 11종, 제작법 5,129개, 재료 연결 11,461개, 숙련도/학습 제한과 결과 아이콘
-- 아이템 검색 + 접이식 상세 종류/등급 필터
-
-## R8-R10 게임 피드백 반영
-
-- 동일 미니바 아이콘 재클릭 시 창 닫기
-- 짧은 메인 정보줄과 배포일자 표시
-- 서버 재시작/종료 계열 명령 기본 숨김
-- Quest ID 기반 선택/목표 이동 stale-state 차단
-- AreaTable.csv를 보강 자료로 사용하되 기존 의미 있는 한글화 보존
-- 위험한 ScottTest 순간이동 제외
-- 순간이동 표 열 정렬, UTF-8 ellipsis, 내 진영만 필터
-- 전문기술 제작 결과 아이콘 우선 표시 및 InvenCraftInfo2 화면 브랜드 문구 제거
-
-## 알려진 제한
-
-- PlayerBot 조작은 서버 기능 검증 전까지 비활성입니다.
-- 활성 스폰/신뢰할 좌표가 없는 스크립트 전용 퀘스트는 이동 버튼이 비활성일 수 있습니다.
-- 권위 있는 한글명이 확인되지 않는 서버 전용 teleport 별칭은 기존 검증된 표기를 유지합니다.
-''', encoding='utf-8', newline='\n')
-          (notes/'R10_GAME_TEST_ACCEPTANCE.md').write_text('''# R10 game-test acceptance
-
-Date: 2026-09-04
-
-R10 was explicitly accepted by the project owner for GitHub synchronization and stable release after iterative in-game testing from R4 through R10.
-
-The stable promotion does not change command/data behavior beyond version/release metadata.
-''', encoding='utf-8', newline='\n')
-
-          manifest = root/'FILE_MANIFEST.sha256'
-          lines = []
-          for path in sorted(p for p in root.rglob('*') if p.is_file() and p != manifest):
-              digest = hashlib.sha256(path.read_bytes()).hexdigest()
-              lines.append(f'{digest}  {path.relative_to(root).as_posix()}')
-          manifest.write_text('\n'.join(lines) + '\n', encoding='utf-8', newline='\n')
-          print('manifest entries', len(lines))
-          PY
+        run: python tools/promote_r10_v1.py
       - name: Install Lua 5.1
         if: steps.gate.outputs.ready == 'true'
         run: sudo apt-get update >/dev/null && sudo apt-get install -y lua5.1 >/dev/null
-      - name: Validate v1.0.0 source contract
+      - name: Verify source and Lua syntax
         if: steps.gate.outputs.ready == 'true'
-        shell: bash
         run: |
-          python - <<'PY'
-          from pathlib import Path
-          import hashlib, re
-          root=Path('AzerothAdmin')
-          toc=(root/'AzerothAdmin.toc').read_text(encoding='utf-8')
-          for required in ('## Interface: 50400','## Version: 1.0.0','## X-Release-Channel: stable','## X-Release-Tag: v1.0.0'):
-              assert required in toc, required
-          paths=[line.strip() for line in toc.splitlines() if line.strip() and not line.startswith('##')]
-          assert len(paths)==63, len(paths)
-          for rel in paths: assert (root/rel.replace('\\','/')).is_file(), rel
-          def count(rel,pat):
-              rx=re.compile(pat); return sum(1 for line in (root/rel).open(encoding='utf-8') if rx.search(line))
-          expected={
-              'Data/Generated/Items.lua':(r'^\s*\{\d+,',80072),
-              'Data/Generated/Quests.lua':(r'^\s*\{\d+,',18144),
-              'Data/Generated/Creatures.lua':(r'^\s*\{\d+,',57526),
-              'Data/Generated/Teleports.lua':(r'^\s*\{\d+,',1602),
-              'Data/MoP/TeleportMeta.lua':(r'^\s*\[\d+\]=',1602),
-              'Data/MoP/ProfessionDetails.lua':(r'^\s*\[\d+\]\s*=',5129),
-          }
-          for rel,(pat,n) in expected.items(): assert count(rel,pat)==n,(rel,count(rel,pat),n)
-          meta=(root/'Data/MoP/TeleportMeta.lua').read_text(encoding='utf-8')
-          assert 'ScottTest' in meta
-          tele=(root/'Modules/Teleports/Module.lua').read_text(encoding='utf-8')
-          assert '내 진영/현재 레벨' not in (root/'Locales/koKR.lua').read_text(encoding='utf-8')
-          assert 'UnitLevel' not in re.search(r'local function matchesProgress\(row, enabled\)(.*?)\nend',tele,re.S).group(1)
-          prof=(root/'Modules/ProfessionInfo/Module.lua').read_text(encoding='utf-8')
-          assert 'local sourceLine = "InvenCraftInfo2 v4.0 · "' not in prof
-          manifest=root/'FILE_MANIFEST.sha256'; listed={}
-          for line in manifest.read_text(encoding='utf-8').splitlines():
-              if line.strip(): d,r=line.split(None,1); listed[r.strip()]=d
-          files=sorted(p for p in root.rglob('*') if p.is_file() and p!=manifest)
-          assert len(files)==len(listed),(len(files),len(listed))
-          for p in files: assert listed[p.relative_to(root).as_posix()]==hashlib.sha256(p.read_bytes()).hexdigest(),p
-          print('V1_SOURCE_CONTRACT_PASS',len(paths),len(files))
-          PY
-          python - <<'PY' > /tmp/toc-lua.txt
-          from pathlib import Path
-          root=Path('AzerothAdmin')
-          for raw in (root/'AzerothAdmin.toc').read_text(encoding='utf-8').splitlines():
-              line=raw.strip()
-              if line and not line.startswith('##') and line.lower().endswith('.lua'):
-                  print(root / line.replace('\\','/'))
-          PY
-          while IFS= read -r file; do luac5.1 -p "$file"; done < /tmp/toc-lua.txt
-          echo "LUA51_TOC_PASS $(wc -l < /tmp/toc-lua.txt)"
-      - name: Build full stable installer
+          grep -F '## Interface: 50400' AzerothAdmin/AzerothAdmin.toc
+          grep -F '## Version: 1.0.0' AzerothAdmin/AzerothAdmin.toc
+          grep -F '## X-Release-Channel: stable' AzerothAdmin/AzerothAdmin.toc
+          grep -F '## X-Release-Tag: v1.0.0' AzerothAdmin/AzerothAdmin.toc
+          python -c "from pathlib import Path; r=Path('AzerothAdmin'); t=(r/'AzerothAdmin.toc').read_text(encoding='utf-8'); p=[x.strip() for x in t.splitlines() if x.strip() and not x.startswith('##')]; assert len(p)==63; assert all((r/x.replace('\\\\','/')).is_file() for x in p); print('TOC_PATH_PASS',len(p))"
+          find AzerothAdmin -name '*.lua' -type f -print0 | sort -z | xargs -0 -n1 luac5.1 -p
+      - name: Package stable candidate
         if: steps.gate.outputs.ready == 'true'
-        shell: bash
         run: |
           mkdir -p dist
-          python - <<'PY'
-          import hashlib, zipfile
-          from pathlib import Path
-          root=Path('AzerothAdmin')
-          out=Path('dist/AzerothAdmin_MoP_5.4.8_v1.0.0_FULL.zip')
-          with zipfile.ZipFile(out,'w',compression=zipfile.ZIP_STORED,allowZip64=True) as z:
-              for p in sorted(x for x in root.rglob('*') if x.is_file()):
-                  z.write(p,p.as_posix())
-          with zipfile.ZipFile(out) as z: assert z.testzip() is None
-          digest=hashlib.sha256(out.read_bytes()).hexdigest()
-          Path(str(out)+'.sha256').write_text(f'{digest}  {out.name}\n',encoding='utf-8')
-          print('release bytes',out.stat().st_size)
-          print('sha256',digest)
-          assert out.stat().st_size > 16000000
-          PY
-      - name: Upload stable installer candidate
+          zip -0 -q -r dist/AzerothAdmin_MoP_5.4.8_v1.0.0_FULL.zip AzerothAdmin
+          test "$(stat -c%s dist/AzerothAdmin_MoP_5.4.8_v1.0.0_FULL.zip)" -gt 16000000
+          sha256sum dist/AzerothAdmin_MoP_5.4.8_v1.0.0_FULL.zip > dist/AzerothAdmin_MoP_5.4.8_v1.0.0_FULL.zip.sha256
+          unzip -tq dist/AzerothAdmin_MoP_5.4.8_v1.0.0_FULL.zip
+      - name: Upload candidate
         if: steps.gate.outputs.ready == 'true'
         uses: actions/upload-artifact@v4
         with:
@@ -226,9 +69,8 @@ The stable promotion does not change command/data behavior beyond version/releas
             docs/releases/v1.0.0/RELEASE_NOTES.md
           if-no-files-found: error
           retention-days: 90
-      - name: Replace branch source with verified v1.0.0 tree
+      - name: Commit verified v1 source
         if: steps.gate.outputs.ready == 'true'
-        shell: bash
         run: |
           rm -rf .release-bootstrap
           git config user.name 'github-actions[bot]'
