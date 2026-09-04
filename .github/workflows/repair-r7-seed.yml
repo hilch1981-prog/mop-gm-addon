@@ -1,0 +1,123 @@
+name: Repair exact R7 seed chunks
+
+on:
+  push:
+    branches: [ai/chatgpt/r11-source-sync]
+    paths:
+      - '.r11-sync/**'
+      - '.github/workflows/repair-r7-seed.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  repair:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Repair small transfer corruptions and verify seed
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+          import hashlib, string
+
+          root = Path('.r11-sync')
+          manifest = []
+          for line in (root/'r7seed-parts.manifest').read_text().splitlines():
+              name, target, size = line.split()
+              manifest.append((name, target, int(size)))
+
+          alphabet = (string.ascii_letters + string.digits + '+/=').encode()
+          def gitsha(data: bytes) -> str:
+              return hashlib.sha1(b'blob ' + str(len(data)).encode() + b'\0' + data).hexdigest()
+
+          unresolved = []
+          changed = []
+          for name, target, want_size in manifest:
+              p = root / ('r7seed.' + name)
+              if not p.exists():
+                  unresolved.append((name, 'missing'))
+                  continue
+              data = p.read_bytes()
+              if len(data) == want_size and gitsha(data) == target:
+                  continue
+
+              fixed = None
+              # Extra contiguous text accidentally appended/inserted (e.g. part-32 EXTRA).
+              delta = len(data) - want_size
+              if 0 < delta <= 32:
+                  for pos in range(len(data) - delta + 1):
+                      cand = data[:pos] + data[pos+delta:]
+                      if gitsha(cand) == target:
+                          fixed = cand
+                          break
+
+              # One-character replacement in a base64 chunk.
+              if fixed is None and len(data) == want_size:
+                  buf = bytearray(data)
+                  for pos, old in enumerate(data):
+                      for c in alphabet:
+                          if c == old:
+                              continue
+                          buf[pos] = c
+                          cand = bytes(buf)
+                          if gitsha(cand) == target:
+                              fixed = cand
+                              break
+                      buf[pos] = old
+                      if fixed is not None:
+                          break
+
+              # One missing base64 character.
+              if fixed is None and want_size - len(data) == 1:
+                  for pos in range(len(data)+1):
+                      for c in alphabet:
+                          cand = data[:pos] + bytes([c]) + data[pos:]
+                          if gitsha(cand) == target:
+                              fixed = cand
+                              break
+                      if fixed is not None:
+                          break
+
+              if fixed is None:
+                  unresolved.append((name, f'size={len(data)} sha={gitsha(data)}'))
+              else:
+                  p.write_bytes(fixed)
+                  changed.append(name)
+                  print('REPAIRED', name)
+
+          # Recheck every chunk against the exact manifest.
+          bad = []
+          for name, target, want_size in manifest:
+              p = root / ('r7seed.' + name)
+              if not p.exists():
+                  bad.append((name, 'missing'))
+                  continue
+              data = p.read_bytes()
+              if len(data) != want_size or gitsha(data) != target:
+                  bad.append((name, f'size={len(data)} sha={gitsha(data)} expected={target}'))
+          if bad:
+              print('UNRESOLVED_CHUNKS')
+              for x in bad: print(*x)
+              raise SystemExit(2)
+          print('ALL_CHUNKS_MATCH')
+          PY
+
+          cat .r11-sync/r7seed.part-*.b64 | base64 -d > /tmp/r7-seed.tar.xz
+          echo 'db04e41dedd5268aa8823ba4fd9f52a986a2ceeb9bc115bf3767a059caf53406  /tmp/r7-seed.tar.xz' | sha256sum -c -
+          test "$(wc -c < /tmp/r7-seed.tar.xz)" = "259348"
+          xz -t /tmp/r7-seed.tar.xz
+          printf '%s\n' 'sha256=db04e41dedd5268aa8823ba4fd9f52a986a2ceeb9bc115bf3767a059caf53406' 'size=259348' 'xz=PASS' > .r11-sync/SEED_VERIFIED
+
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add .r11-sync/r7seed.part-*.b64 .r11-sync/SEED_VERIFIED
+          if ! git diff --cached --quiet; then
+            git commit -m 'Repair and verify exact R7 seed'
+            git push origin HEAD:ai/chatgpt/r11-source-sync
+          fi
