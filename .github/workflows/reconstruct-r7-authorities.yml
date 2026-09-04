@@ -1,0 +1,126 @@
+name: Reconstruct exact R7 from source authorities
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [ai/chatgpt/r11-source-sync]
+    paths: ['.github/workflows/reconstruct-r7-authorities.yml']
+
+permissions:
+  contents: write
+
+jobs:
+  reconstruct:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with: {fetch-depth: 0}
+      - name: Reconstruct exact R7 from manifests and authorities
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch origin main ai/chatgpt/r5-quest-tele-performance --no-tags
+          rm -rf /tmp/r7 /tmp/canon.git /tmp/r7tools /tmp/generated-r7 /tmp/server
+          mkdir -p /tmp/r7/AzerothAdmin /tmp/r7tools
+          git show origin/main:AzerothAdmin/FILE_MANIFEST.sha256 > /tmp/r7.manifest
+          cp /tmp/r7.manifest /tmp/r7/AzerothAdmin/FILE_MANIFEST.sha256
+
+          git clone --mirror https://github.com/hilch1981-prog/azerothcore-gm-addon.git /tmp/canon.git
+          python3 - <<'PY'
+          from pathlib import Path
+          import hashlib, subprocess, re
+          manifest=Path('/tmp/r7.manifest').read_text(errors='replace').splitlines()
+          out=Path('/tmp/r7/AzerothAdmin')
+          rows=[]
+          for line in manifest:
+              m=re.match(r'^([0-9a-fA-F]{64})\s+[ *]?(.+?)\s*$',line)
+              if m: rows.append((m.group(1).lower(),m.group(2).replace('\\','/')))
+          print('MANIFEST_ROWS',len(rows))
+          refs=subprocess.check_output(['git','--git-dir=/tmp/canon.git','for-each-ref','--format=%(refname)'],text=True).splitlines()
+          def sha(b): return hashlib.sha256(b).hexdigest()
+          def show(repo,argspec):
+              try: return subprocess.check_output(['git']+repo+['show',argspec],stderr=subprocess.DEVNULL)
+              except subprocess.CalledProcessError: return None
+          missing=[]
+          for want,path in rows:
+              dest=out/path
+              if dest.exists() and sha(dest.read_bytes())==want: continue
+              found=None
+              for spec in [f'origin/main:AzerothAdmin/{path}', f'HEAD:AzerothAdmin/{path}']:
+                  b=show([],spec)
+                  if b is not None and sha(b)==want: found=b; break
+              if found is None:
+                  for ref in refs:
+                      b=show(['--git-dir=/tmp/canon.git'],f'{ref}:AzerothAdmin/{path}')
+                      if b is not None and sha(b)==want: found=b; break
+              if found is None:
+                  try:
+                      commits=subprocess.check_output(['git','--git-dir=/tmp/canon.git','log','--all','--format=%H','--','AzerothAdmin/'+path],text=True,stderr=subprocess.DEVNULL).splitlines()
+                  except subprocess.CalledProcessError: commits=[]
+                  for c in commits[:200]:
+                      b=show(['--git-dir=/tmp/canon.git'],f'{c}:AzerothAdmin/{path}')
+                      if b is not None and sha(b)==want: found=b; break
+              if found is not None:
+                  dest.parent.mkdir(parents=True,exist_ok=True); dest.write_bytes(found)
+              else: missing.append((want,path))
+          Path('/tmp/r7-missing.txt').write_text('\n'.join(f'{h} {p}' for h,p in missing)+'\n')
+          print('UNRESOLVED_AFTER_AUTHORITY_SCAN',len(missing))
+          PY
+
+          for f in Items.lua Quests.lua Creatures.lua Teleports.lua; do
+            git show "origin/main:AzerothAdmin/Data/Generated/$f" > "/tmp/$f"
+            sed -i 's/AzerothAdminMoP/AzerothAdminMoP548/g' "/tmp/$f"
+            mkdir -p /tmp/r7/AzerothAdmin/Data/Generated; cp "/tmp/$f" /tmp/r7/AzerothAdmin/Data/Generated/
+          done
+          echo '9aa93c507a03b19a5c3d36e883bd3193e903db3953921792b8ae839f630ee6d3  /tmp/r7/AzerothAdmin/Data/Generated/Items.lua' | sha256sum -c -
+          echo 'c08c443f72e9212e33f23c4f622ebb8ecbd92984700c7c5563da122e6cbf1116  /tmp/r7/AzerothAdmin/Data/Generated/Quests.lua' | sha256sum -c -
+          echo '94a93cd13fe4b0b64aa7f253c43925d22066f8cb27cb7bacd53459b014f6a493  /tmp/r7/AzerothAdmin/Data/Generated/Creatures.lua' | sha256sum -c -
+          echo '580236ba5e3ad7b3063dc22b37139b77ebe98a372192ec6d5e9fda1092f086cc  /tmp/r7/AzerothAdmin/Data/Generated/Teleports.lua' | sha256sum -c -
+
+          for p in tools/extract_r5_mop_data.py tools/extract_r5_mop_data_v2.py tools/extract_r5_mop_data_v3.py tools/extract_r7_mop_data.py tools/patch_r7_objective_types.py; do
+            git show "origin/ai/chatgpt/r5-quest-tele-performance:$p" > "/tmp/r7tools/$(basename "$p")"
+          done
+          git clone --no-checkout https://github.com/hilch1981-prog/MOP_V2_Repack.git /tmp/server
+          git -C /tmp/server checkout 0739d072f8f1f42523f04cca4b2607d88a01def4
+          python3 /tmp/r7tools/extract_r7_mop_data.py --server /tmp/server --out /tmp/generated-r7
+          ql=$(find /tmp/generated-r7 -type f -name QuestLocations.lua -print -quit)
+          td=$(find /tmp/generated-r7 -type f -name TeleportDbNames.lua -print -quit)
+          qa=$(find /tmp/generated-r7 -type f -iname '*Quest*Audit*.json' -print -quit)
+          python3 - "$ql" "$qa" <<'PY'
+          import sys,re,json
+          ql,qa=sys.argv[1:]
+          s=open(ql,encoding='utf-8').read(); p=r'(\{s=\d+,k="[cio]",c=\d+,id=\d+(?:,[ei]=\d+)?)'+r',t=\d+'
+          s,n=re.subn(p,r'\1',s)
+          if n!=17095: raise SystemExit(n)
+          open(ql,'w',encoding='utf-8',newline='').write(s)
+          o=json.load(open(qa,encoding='utf-8')); o.pop('objective_types_preserved',None); o.pop('objective_type_counts',None)
+          open(qa,'w',encoding='utf-8',newline='').write(json.dumps(o,ensure_ascii=False,indent=2))
+          PY
+          mkdir -p /tmp/r7/AzerothAdmin/Data/MoP
+          cp "$ql" /tmp/r7/AzerothAdmin/Data/MoP/QuestLocations.lua
+          cp "$td" /tmp/r7/AzerothAdmin/Data/MoP/TeleportDbNames.lua
+          audit_dest=$(awk '/Quest.*Audit.*\.json$/ {print $2; exit}' /tmp/r7.manifest); audit_dest=${audit_dest#\*}; [ -n "$audit_dest" ] || audit_dest=Data/MoP/QuestLocationAudit.json
+          mkdir -p "/tmp/r7/AzerothAdmin/$(dirname "$audit_dest")"; cp "$qa" "/tmp/r7/AzerothAdmin/$audit_dest"
+
+          if [ "$(find /tmp/r7/AzerothAdmin -type f | wc -l)" != 80 ] || ! (cd /tmp/r7/AzerothAdmin && sha256sum -c FILE_MANIFEST.sha256 >/dev/null); then
+            mkdir -p .r11-sync
+            cp /tmp/r7-missing.txt .r11-sync/AUTHORITY_R7_REPORT.txt
+            printf 'files=%s\n' "$(find /tmp/r7/AzerothAdmin -type f | wc -l)" >> .r11-sync/AUTHORITY_R7_REPORT.txt
+            git config user.name 'github-actions[bot]'; git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+            git add .r11-sync/AUTHORITY_R7_REPORT.txt
+            if ! git diff --cached --quiet; then git commit -m 'Record unresolved R7 authority files'; git push origin HEAD:ai/chatgpt/r11-source-sync; fi
+            exit 0
+          fi
+
+          rm -rf AzerothAdmin; cp -a /tmp/r7/AzerothAdmin AzerothAdmin
+          cat .r11-sync/patch.part-*.b64 | base64 -d > /tmp/r11.patch.xz
+          echo '45d0f9ab4865ca2a1072848f95d09b03e8a896c915d4e26c3c78a0be57548e6c  /tmp/r11.patch.xz' | sha256sum -c -
+          xz -dc /tmp/r11.patch.xz > /tmp/r11.patch
+          applied=0
+          if git apply --check --unsafe-paths /tmp/r11.patch >/dev/null 2>&1; then git apply --unsafe-paths /tmp/r11.patch; applied=1; else for s in 0 1 2 3; do if patch --dry-run --batch -p$s < /tmp/r11.patch >/dev/null 2>&1; then patch --batch -p$s < /tmp/r11.patch; applied=1; break; fi; done; fi
+          test "$applied" = 1
+          test "$(find AzerothAdmin -type f | wc -l)" = 86
+          (cd AzerothAdmin && sha256sum -c FILE_MANIFEST.sha256)
+          git config user.name 'github-actions[bot]'; git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -A AzerothAdmin
+          if ! git diff --cached --quiet; then git commit -m 'Materialize exact R11 from verified source authorities'; git push origin HEAD:ai/chatgpt/r11-source-sync; fi
