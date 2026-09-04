@@ -1,0 +1,63 @@
+name: Probe exact R11 target blobs
+
+on:
+  push:
+    branches:
+      - ai/chatgpt/r11-source-sync
+    paths:
+      - '.github/workflows/probe-r11-target-blobs.yml'
+      - '.r11-sync/r11-target-git-blobs.tsv'
+      - '.r11-sync/r11-target-git-blobs-corrections.tsv'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Fetch all branch objects
+        run: git fetch --prune origin '+refs/heads/*:refs/remotes/origin/*'
+      - name: Probe exact target blobs
+        shell: bash
+        run: |
+          set -euo pipefail
+          : > found.tsv
+          : > missing.tsv
+          total=0
+          found=0
+          missing=0
+          while IFS=$'\t' read -r sha size path; do
+            total=$((total+1))
+            if ! [[ "$sha" =~ ^[0-9a-f]{40}$ ]]; then
+              repl=$(awk -F '\t' -v p="$path" '$3==p {print $1"\t"$2"\t"$3}' .r11-sync/r11-target-git-blobs-corrections.tsv)
+              if [ -z "$repl" ]; then
+                echo "INVALID $path $sha" >&2
+                exit 1
+              fi
+              IFS=$'\t' read -r sha size path <<< "$repl"
+            fi
+            if git cat-file -e "${sha}^{blob}" 2>/dev/null; then
+              printf '%s\t%s\t%s\n' "$sha" "$size" "$path" >> found.tsv
+              found=$((found+1))
+            else
+              printf '%s\t%s\t%s\n' "$sha" "$size" "$path" >> missing.tsv
+              missing=$((missing+1))
+            fi
+          done < .r11-sync/r11-target-git-blobs.tsv
+          echo "TOTAL=$total FOUND=$found MISSING=$missing"
+          echo '--- MISSING BLOBS ---'
+          cat missing.tsv
+          echo '--- FOUND LARGE BLOBS >= 100KB ---'
+          awk -F '\t' '$2 >= 100000 {print}' found.tsv
+      - uses: actions/upload-artifact@v4
+        with:
+          name: r11-target-blob-probe
+          path: |
+            found.tsv
+            missing.tsv
+          retention-days: 7
