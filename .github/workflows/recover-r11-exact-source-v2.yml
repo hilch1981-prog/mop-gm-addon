@@ -1,0 +1,96 @@
+name: Recover exact R11 source v2
+on:
+  push:
+    branches: [ai/chatgpt/r11-source-sync]
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  recover:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with: {fetch-depth: 0}
+      - name: Build exact R7 candidates
+        shell: bash
+        run: |
+          set -euo pipefail
+          if test -f .r11-sync/EXACT_SOURCE_VERIFIED && test "$(find AzerothAdmin -type f | wc -l | tr -d ' ')" = 86; then exit 0; fi
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+          w=Path('.github/workflows/apply-r11-source-sync.yml')
+          if not w.exists(): raise SystemExit('missing R7 blob manifest source')
+          d={}
+          for l in w.read_text(errors='replace').splitlines():
+              a=re.search(r'\b([0-9a-f]{40})\b\s+\*?(AzerothAdmin/\S+)',l)
+              b=re.search(r'(AzerothAdmin/\S+)\s+\b([0-9a-f]{40})\b',l)
+              if a:d[a.group(2)]=a.group(1)
+              elif b:d[b.group(1)]=b.group(2)
+          if len(d)<80: raise SystemExit(f'blob entries={len(d)}')
+          Path('/tmp/r7.tsv').write_text('\n'.join(f'{s}\t{p}' for p,s in sorted(d.items()))+'\n')
+          PY
+          rm -rf /tmp/r7 /tmp/partial /tmp/canonical /tmp/server /tmp/gen
+          mkdir -p /tmp/r7 /tmp/partial
+          shopt -s nullglob; parts=(.r11-sync/seed2.part-*.b64)
+          if (( ${#parts[@]} )); then
+            cat "${parts[@]}" | base64 -d > /tmp/p.xz
+            xz -dc /tmp/p.xz > /tmp/p.tar 2>/dev/null || true
+            tar -xf /tmp/p.tar -C /tmp/partial --ignore-zeros 2>/dev/null || true
+            test ! -d /tmp/partial/AzerothAdmin || cp -a /tmp/partial/AzerothAdmin/. /tmp/r7/
+          fi
+          git fetch origin '+refs/heads/*:refs/remotes/origin/*' '+refs/tags/*:refs/tags/*' --force
+          git clone -q --mirror https://github.com/hilch1981-prog/azerothcore-gm-addon.git /tmp/canonical
+          python3 tools/r7_hash_recover_v2.py /tmp/r7.tsv /tmp/r7 . /tmp/canonical || true
+          mkdir -p /tmp/r7/Data/Generated
+          for f in Items Quests Creatures Teleports; do git show "origin/main:AzerothAdmin/Data/Generated/$f.lua" | sed 's/AzerothAdminMoP/AzerothAdminMoP548/g' > "/tmp/r7/Data/Generated/$f.lua"; done
+          echo '9aa93c507a03b19a5c3d36e883bd3193e903db3953921792b8ae839f630ee6d3  /tmp/r7/Data/Generated/Items.lua' | sha256sum -c -
+          echo 'c08c443f72e9212e33f23c4f622ebb8ecbd92984700c7c5563da122e6cbf1116  /tmp/r7/Data/Generated/Quests.lua' | sha256sum -c -
+          echo '94a93cd13fe4b0b64aa7f253c43925d22066f8cb27cb7bacd53459b014f6a493  /tmp/r7/Data/Generated/Creatures.lua' | sha256sum -c -
+          echo '580236ba5e3ad7b3063dc22b37139b77ebe98a372192ec6d5e9fda1092f086cc  /tmp/r7/Data/Generated/Teleports.lua' | sha256sum -c -
+          git fetch origin ai/chatgpt/r5-quest-tele-performance --force
+          for f in extract_r7_mop_data.py extract_r5_mop_data.py extract_r5_mop_data_v2.py extract_r5_mop_data_v3.py patch_r7_objective_types.py; do git show "origin/ai/chatgpt/r5-quest-tele-performance:tools/$f" > "/tmp/$f" 2>/dev/null || true; done
+          git clone -q https://github.com/hilch1981-prog/MOP_V2_Repack.git /tmp/server
+          git -C /tmp/server checkout -q 0739d072f8f1f42523f04cca4b2607d88a01def4
+          python3 /tmp/extract_r7_mop_data.py --server /tmp/server --out /tmp/gen
+          python3 - <<'PY'
+          from pathlib import Path
+          import re,json
+          q=Path('/tmp/gen/QuestLocations.lua'); s=q.read_text(); s,n=re.subn(r'(\{s=\d+,k="[cio]",c=\d+,id=\d+(?:,[ei]=\d+)?)'+r',t=\d+',r'\1',s)
+          if n!=17095: raise SystemExit(n)
+          q.write_text(s)
+          a=next(Path('/tmp/gen').glob('*Audit*.json')); o=json.loads(a.read_text()); o.pop('objective_types_preserved',None); o.pop('objective_type_counts',None); a.write_text(json.dumps(o,ensure_ascii=False,indent=2))
+          PY
+          mkdir -p /tmp/r7/Data/MoP
+          cp /tmp/gen/QuestLocations.lua /tmp/r7/Data/MoP/QuestLocations.lua
+          cp /tmp/gen/TeleportDbNames.lua /tmp/r7/Data/MoP/TeleportDbNames.lua
+          cp "$(find /tmp/gen -maxdepth 1 -name '*Audit*.json' -print -quit)" /tmp/r7/Data/MoP/QuestLocationAudit.json
+          python3 tools/r7_hash_recover_v2.py /tmp/r7.tsv /tmp/r7 . /tmp/canonical
+          test "$(find /tmp/r7 -type f | wc -l | tr -d ' ')" = 80
+      - name: Apply exact R11 patch and verify
+        shell: bash
+        run: |
+          set -euo pipefail
+          if test -f .r11-sync/EXACT_SOURCE_VERIFIED && test "$(find AzerothAdmin -type f | wc -l | tr -d ' ')" = 86; then exit 0; fi
+          rm -rf AzerothAdmin; mkdir AzerothAdmin; cp -a /tmp/r7/. AzerothAdmin/
+          cat .r11-sync/patch.part-*.b64 | base64 -d > /tmp/r11.xz
+          echo '45d0f9ab4865ca2a1072848f95d09b03e8a896c915d4e26c3c78a0be57548e6c  /tmp/r11.xz' | sha256sum -c -
+          xz -dc /tmp/r11.xz > /tmp/r11.patch
+          if git apply --check /tmp/r11.patch 2>/dev/null; then git apply /tmp/r11.patch; else
+            ok=0; for p in 0 1 2 3; do if patch --dry-run -s -p$p < /tmp/r11.patch >/dev/null 2>&1; then patch -s -p$p < /tmp/r11.patch; ok=1; break; fi; done; test "$ok" = 1
+          fi
+          test "$(find AzerothAdmin -type f | wc -l | tr -d ' ')" = 86
+          test -f AzerothAdmin/USER_REGRESSION_R11.md
+          test -f AzerothAdmin/Modules/Integrations/BattlePetDeathPicker.lua
+          if test -f tools/static_addon_checks.py; then python3 tools/static_addon_checks.py --addon AzerothAdmin; fi
+      - name: Commit verified source
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -f .r11-sync/seed2.part-*.b64 .r11-sync/path-test.txt .r11-sync/direct-token-probe.txt .r11-sync/VERIFY_TRIGGER .r11-sync/RECOVER_TRIGGER .r11-sync/READY .r11-sync/patch.part-*.b64 .r11-sync/R7_RECOVERY_REPORT.txt
+          rm -f .github/workflows/apply-r11-source-sync.yml
+          printf 'EXACT_R11_SOURCE_VERIFIED\nfiles=86\n' > .r11-sync/EXACT_SOURCE_VERIFIED
+          git config user.name github-actions[bot]; git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add -A
+          git diff --cached --quiet || git commit -m 'Recover exact R11 source with hash verification'
+          git push origin HEAD:ai/chatgpt/r11-source-sync
