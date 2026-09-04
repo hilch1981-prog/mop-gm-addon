@@ -1,0 +1,74 @@
+name: Recover exact R7 from retained GitHub artifacts
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [ai/chatgpt/r11-source-sync]
+    paths: ['.github/workflows/recover-r7-artifact.yml']
+
+permissions:
+  contents: write
+  actions: read
+
+jobs:
+  recover:
+    runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+        with: {fetch-depth: 0}
+      - name: Find an exact R7 package in retained artifacts
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -rf /tmp/recover; mkdir -p /tmp/recover
+          gh api --paginate "repos/$GITHUB_REPOSITORY/actions/artifacts?per_page=100" --jq '.artifacts[] | select(.expired==false) | [.id,.name] | @tsv' > /tmp/artifacts.tsv || true
+          found=''
+          while IFS=$'\t' read -r id name; do
+            echo "$name" | grep -Eiq 'r7|game.?test|source|addon|548|azeroth' || continue
+            rm -rf /tmp/recover/a; mkdir -p /tmp/recover/a
+            if ! gh api "repos/$GITHUB_REPOSITORY/actions/artifacts/$id/zip" > /tmp/recover/a.zip 2>/dev/null; then continue; fi
+            unzip -q -o /tmp/recover/a.zip -d /tmp/recover/a || continue
+            n=0
+            while IFS= read -r z; do
+              n=$((n+1)); mkdir -p "/tmp/recover/a/nested$n"; unzip -q -o "$z" -d "/tmp/recover/a/nested$n" || true
+            done < <(find /tmp/recover/a -type f -name '*.zip' -size -40M | head -20)
+            while IFS= read -r mf; do
+              root=$(dirname "$mf")
+              [ "$(find "$root" -type f | wc -l)" = 80 ] || continue
+              (cd "$root" && sha256sum -c FILE_MANIFEST.sha256 >/dev/null) || continue
+              check(){ echo "$1  $root/$2" | sha256sum -c - >/dev/null 2>&1; }
+              check 9aa93c507a03b19a5c3d36e883bd3193e903db3953921792b8ae839f630ee6d3 Data/Generated/Items.lua || continue
+              check c08c443f72e9212e33f23c4f622ebb8ecbd92984700c7c5563da122e6cbf1116 Data/Generated/Quests.lua || continue
+              check 94a93cd13fe4b0b64aa7f253c43925d22066f8cb27cb7bacd53459b014f6a493 Data/Generated/Creatures.lua || continue
+              check 580236ba5e3ad7b3063dc22b37139b77ebe98a372192ec6d5e9fda1092f086cc Data/Generated/Teleports.lua || continue
+              check fd21434a6270c99a23462819df60105c51476f7a248410fd5703e8fdf0ed4b80 Data/MoP/ItemSources.lua || continue
+              check 775b9900f58301702a9e97bb3d678c397989620204206234635fcbf21da5d0bb Data/MoP/LegacyItemCategories.lua || continue
+              check 54fe9f00e3009efe44e31c3f622f0c18bb4ead5879e13404b05740743d8d48c7 Data/MoP/ProfessionDetails.lua || continue
+              check 782e3e15953973bc148889b98d2d13d40ae88ff33bb25ed89be932507e644db0 Data/MoP/QuestLocations.lua || continue
+              check 537499880a4468be4799e647467c432169d10940e345707a19a46724b6759d6e Data/MoP/TeleportDbNames.lua || continue
+              check c662f01bf15b14ba274ed5301296111885033639946091864748927086301f13 Data/MoP/TeleportMeta.lua || continue
+              found="$root"; break 2
+            done < <(find /tmp/recover/a -type f -name FILE_MANIFEST.sha256)
+          done < /tmp/artifacts.tsv
+          if [ -z "$found" ]; then
+            echo 'No retained exact R7 artifact found.'
+            exit 0
+          fi
+          echo "EXACT_R7_ARTIFACT=$found"
+          rm -rf AzerothAdmin; cp -a "$found" AzerothAdmin
+          cat .r11-sync/patch.part-*.b64 | base64 -d > /tmp/r11.patch.xz
+          echo '45d0f9ab4865ca2a1072848f95d09b03e8a896c915d4e26c3c78a0be57548e6c  /tmp/r11.patch.xz' | sha256sum -c -
+          xz -dc /tmp/r11.patch.xz > /tmp/r11.patch
+          applied=0
+          if git apply --check --unsafe-paths /tmp/r11.patch >/dev/null 2>&1; then git apply --unsafe-paths /tmp/r11.patch; applied=1; else
+            for s in 0 1 2 3; do if patch --dry-run --batch -p$s < /tmp/r11.patch >/dev/null 2>&1; then patch --batch -p$s < /tmp/r11.patch; applied=1; break; fi; done
+          fi
+          test "$applied" = 1
+          test "$(find AzerothAdmin -type f | wc -l)" = 86
+          (cd AzerothAdmin && sha256sum -c FILE_MANIFEST.sha256)
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -A AzerothAdmin
+          if ! git diff --cached --quiet; then git commit -m 'Materialize exact R11 source from verified R7 artifact'; git push origin HEAD:ai/chatgpt/r11-source-sync; fi
