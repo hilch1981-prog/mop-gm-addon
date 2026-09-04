@@ -1,0 +1,103 @@
+name: Apply R11 BattlePet source patch
+
+on:
+  push:
+    branches: [ai/chatgpt/r11-battlepet-claude-release]
+    paths:
+      - '.release-payload/**'
+      - '.github/workflows/apply-r11-battlepet-patch.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: apply-r11-battlepet-patch
+  cancel-in-progress: false
+
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Reconstruct and verify source patch
+        run: |
+          set -euxo pipefail
+          test "$(find .release-payload -name 'r11.patch.b64.part-*' -type f | wc -l)" -eq 8
+          cat .release-payload/r11.patch.b64.part-* | base64 --decode > /tmp/r11.patch.xz
+          echo 'b8a2cfca03843b01ade9b73cd670611b686ea64ea850b4272ee3836e014476c3  /tmp/r11.patch.xz' | sha256sum -c -
+          xz -dc /tmp/r11.patch.xz > /tmp/r11.patch
+          echo '7f0e4f941cc1a7bf54e43104ffba92fab49b08354a3546f7a7ebab187161c50b  /tmp/r11.patch' | sha256sum -c -
+          git apply --check /tmp/r11.patch
+          git apply /tmp/r11.patch
+
+      - name: Validate R11 source contract
+        run: |
+          set -euxo pipefail
+          grep -F '## Interface: 50400' AzerothAdmin/AzerothAdmin.toc
+          grep -F '## Version: 3.5.0-548-r11-battlepet-rc11' AzerothAdmin/AzerothAdmin.toc
+          grep -F 'Modules\\Integrations\\BattlePetDeathPicker.lua' AzerothAdmin/AzerothAdmin.toc
+          grep -F 'PET_BATTLE_HEALTH_CHANGED' AzerothAdmin/Modules/Integrations/BattlePetDeathPicker.lua
+          grep -F 'PET_BATTLE_PET_ROUND_PLAYBACK_COMPLETE' AzerothAdmin/Modules/Integrations/BattlePetDeathPicker.lua
+          grep -F 'PetBattlePetSelectionFrame_Show' AzerothAdmin/Modules/Integrations/BattlePetDeathPicker.lua
+          ! grep -F 'QuestFrameAcceptButton' AzerothAdmin/Modules/Integrations/BattlePetDeathPicker.lua
+          ! grep -F 'QuestFrameCompleteQuestButton' AzerothAdmin/Modules/Integrations/BattlePetDeathPicker.lua
+          ! grep -F 'QuestDialogAutoCloseActive' AzerothAdmin/Modules/Integrations/BattlePetDeathPicker.lua
+          test "$(grep -E '\\.lua[[:space:]]*$' AzerothAdmin/AzerothAdmin.toc | wc -l)" -eq 64
+
+      - name: Verify addon manifest and data counts
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import hashlib, re
+          root=Path('AzerothAdmin')
+          manifest=root/'FILE_MANIFEST.sha256'
+          listed={}
+          for raw in manifest.read_text(encoding='utf-8').splitlines():
+              if raw.strip():
+                  digest, rel=raw.split(None,1)
+                  listed[rel.strip()]=digest
+          files=sorted(p for p in root.rglob('*') if p.is_file() and p != manifest)
+          assert len(files)==len(listed),(len(files),len(listed))
+          for p in files:
+              rel=p.relative_to(root).as_posix()
+              assert listed.get(rel)==hashlib.sha256(p.read_bytes()).hexdigest(),rel
+          def count(rel, pattern):
+              rx=re.compile(pattern)
+              return sum(1 for line in (root/rel).open(encoding='utf-8') if rx.search(line))
+          assert count('Data/Generated/Items.lua', r'^\s*\{\d+,')==80072
+          assert count('Data/Generated/Quests.lua', r'^\s*\{\d+,')==18144
+          assert count('Data/Generated/Creatures.lua', r'^\s*\{\d+,')==57526
+          assert count('Data/Generated/Teleports.lua', r'^\s*\{\d+,')==1602
+          print('R11_MANIFEST_DATA_PASS', len(files), len(listed))
+          PY
+
+      - name: Parse TOC Lua with Lua 5.1
+        run: |
+          sudo apt-get update >/dev/null
+          sudo apt-get install -y lua5.1 >/dev/null
+          python - <<'PY' > /tmp/toc-lua.txt
+          from pathlib import Path
+          root=Path('AzerothAdmin')
+          for raw in (root/'AzerothAdmin.toc').read_text(encoding='utf-8').splitlines():
+              line=raw.strip()
+              if line and not line.startswith('##') and line.lower().endswith('.lua'):
+                  print(root / line.replace('\\','/'))
+          PY
+          test "$(wc -l < /tmp/toc-lua.txt)" -eq 64
+          while IFS= read -r file; do luac5.1 -p "$file"; done < /tmp/toc-lua.txt
+
+      - name: Commit canonical R11 source and remove transfer payload
+        run: |
+          set -euxo pipefail
+          rm -rf .release-payload
+          rm -f .github/workflows/apply-r11-battlepet-patch.yml
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -A
+          git diff --cached --stat
+          git commit -m 'Sync R11 hidden BattlePet picker candidate'
+          git push origin HEAD:${GITHUB_REF_NAME}
