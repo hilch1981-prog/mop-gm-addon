@@ -20,85 +20,23 @@ jobs:
           ref: ai/chatgpt/r11-source-sync
           fetch-depth: 0
 
-      - name: Restore pinned canonical R7 addon baseline
-        shell: bash
+      - name: Probe retained v1 delta integrity
         run: |
           set -euo pipefail
-          r7_commit='d9e7d68551726fb71957e06b50dc039ee63bd511'
-          git cat-file -e "${r7_commit}^{commit}"
-          rm -rf AzerothAdmin
-          git archive "$r7_commit" AzerothAdmin | tar -x
-          test -f AzerothAdmin/AzerothAdmin.toc
-          test -f AzerothAdmin/Framework/Bootstrap.lua
-          test -f AzerothAdmin/Data/Generated/SourceInfo.lua
-          test -f AzerothAdmin/Locales/enUS.lua
-          test -f AzerothAdmin/Modules/Commands/Module.lua
-          printf 'R7 baseline files: '
-          find AzerothAdmin -type f | wc -l
-
-      - name: Reconstruct verified R7 to R11 patch
-        run: |
-          set -euo pipefail
-          cat .r11-sync/patch.part-*.b64 > /tmp/r11.patch.xz.b64
-          base64 -d /tmp/r11.patch.xz.b64 > /tmp/r11.patch.xz
-          echo '45d0f9ab4865ca2a1072848f95d09b03e8a896c915d4e26c3c78a0be57548e6c  /tmp/r11.patch.xz' | sha256sum -c -
-          xz -t /tmp/r11.patch.xz
-          xz -dc /tmp/r11.patch.xz > /tmp/r11.patch
-
-      - name: Verify and apply exact R11 game-test source patch
-        run: |
-          set -euo pipefail
-          patch --dry-run -p1 < /tmp/r11.patch
-          patch -p1 < /tmp/r11.patch
-
-      - name: Validate R11 package contract
-        run: |
-          set -euo pipefail
-          grep -F '## Interface: 50400' AzerothAdmin/AzerothAdmin.toc
-          grep -F '## Version: 3.5.0-548-r11-battlepet-rc11' AzerothAdmin/AzerothAdmin.toc
-          grep -F 'Modules\Integrations\BattlePetDeathPicker.lua' AzerothAdmin/AzerothAdmin.toc
-          test -f AzerothAdmin/Modules/Integrations/BattlePetDeathPicker.lua
-          test -f AzerothAdmin/Data/MoP/AreaTableLocalizationAudit.json
-          test "$(find AzerothAdmin -type f | wc -l)" -eq 86
-          cd AzerothAdmin
-          sha256sum -c FILE_MANIFEST.sha256
-          test "$(wc -l < FILE_MANIFEST.sha256)" -eq 85
-
-      - name: Parse every TOC Lua file with Lua 5.1
-        run: |
-          set -euo pipefail
-          sudo apt-get update >/dev/null
-          sudo apt-get install -y lua5.1 >/dev/null
-          python3 - <<'PY' > /tmp/toc-lua.txt
-          from pathlib import Path
-          addon = Path('AzerothAdmin')
-          for raw in (addon / 'AzerothAdmin.toc').read_text(encoding='utf-8').splitlines():
-              line = raw.strip()
-              if line and not line.startswith('##') and line.lower().endswith('.lua'):
-                  print(addon / line.replace('\\', '/'))
-          PY
-          test "$(wc -l < /tmp/toc-lua.txt)" -eq 64
-          while IFS= read -r file; do luac5.1 -p "$file"; done < /tmp/toc-lua.txt
-
-      - name: Build R11 game-test ZIP
-        run: |
-          set -euo pipefail
-          rm -f AzerothAdmin_3.5.0-548-r11-GAME-TEST-FULL.zip
-          zip -qr AzerothAdmin_3.5.0-548-r11-GAME-TEST-FULL.zip AzerothAdmin
-          sha256sum AzerothAdmin_3.5.0-548-r11-GAME-TEST-FULL.zip
-          echo 'Canonical promotion input SHA-256: 8a452840a5fffbe57bd2664b067c448bd6efabfc3c1216c1d798515359fd1090'
-          echo 'Source identity is enforced by FILE_MANIFEST.sha256; ZIP container metadata may differ.'
-
-      - name: Commit synchronized R11 source
-        run: |
-          set -euo pipefail
-          rm -rf .r11-sync
-          rm -f .github/workflows/apply-r11-source-sync.yml
-          rm -f .github/workflows/export-r11-pr-snapshot.yml
-          rm -f .github/workflows/export-v1-delta.yml
-          rm -f .github/workflows/probe-r11-target-blobs.yml
-          git config user.name 'Hobbyist'
-          git config user.email 'hilch1981@gmail.com'
-          git add -A AzerothAdmin .r11-sync .github/workflows/apply-r11-source-sync.yml .github/workflows/export-r11-pr-snapshot.yml .github/workflows/export-v1-delta.yml .github/workflows/probe-r11-target-blobs.yml || true
-          git commit -m 'Sync R11 full game-test source'
-          git push origin HEAD:ai/chatgpt/r11-source-sync
+          git fetch origin release/v1.0.0-stable:refs/remotes/origin/release/v1.0.0-stable
+          rm -f /tmp/v1-delta.tar.xz
+          for n in 000 001 002 003; do
+            git show "origin/release/v1.0.0-stable:.release-seed/v1-delta.part-${n}" > "/tmp/part-${n}"
+            printf 'part-%s bytes=' "$n"
+            wc -c < "/tmp/part-${n}"
+            sha256sum "/tmp/part-${n}"
+            cat "/tmp/part-${n}" >> /tmp/v1-delta.tar.xz
+          done
+          echo 'combined:'
+          wc -c /tmp/v1-delta.tar.xz
+          sha256sum /tmp/v1-delta.tar.xz
+          file /tmp/v1-delta.tar.xz
+          xz -t /tmp/v1-delta.tar.xz
+          tar -tJf /tmp/v1-delta.tar.xz | tee /tmp/v1-delta-files.txt
+          printf 'entries='
+          wc -l < /tmp/v1-delta-files.txt
