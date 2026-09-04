@@ -27,12 +27,17 @@ jobs:
             git show "origin/release/v1.0.0-stable:.release-seed/v1-delta.part-${n}" > "/tmp/v1-seed/part-${n}"
           done
           cat /tmp/v1-seed/part-* > /tmp/v1-delta.tar.xz
-          echo '033ba904aa48353a585131c946bac12d0ba91d8c80f43a83c0165d8870893111  /tmp/v1-delta.tar.xz' | sha256sum -c -
+          sha256sum /tmp/v1-delta.tar.xz | tee v1-delta-source.sha256
+          xz -t /tmp/v1-delta.tar.xz
           tar -xJf /tmp/v1-delta.tar.xz -C /tmp/v1-delta
+          find /tmp/v1-delta -type f -printf '%P\n' | sort | tee v1-delta-files.txt
           tar -cJf v1-delta-source.tar.xz -C /tmp/v1-delta .
       - uses: actions/upload-artifact@v4
         with:
           name: v1-delta-source-snapshot
-          path: v1-delta-source.tar.xz
+          path: |
+            v1-delta-source.tar.xz
+            v1-delta-source.sha256
+            v1-delta-files.txt
           if-no-files-found: error
           retention-days: 7
