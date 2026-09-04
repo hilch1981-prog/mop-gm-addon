@@ -1,0 +1,79 @@
+name: Publish AzerothAdmin MoP v1.0.0
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'AzerothAdmin/**'
+      - 'docs/releases/v1.0.0/**'
+      - '.github/workflows/publish-v1.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: publish-azerothadmin-v1.0.0
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Gate on stable metadata
+        run: |
+          grep -F '## Version: 1.0.0' AzerothAdmin/AzerothAdmin.toc
+          grep -F '## X-Release-Channel: stable' AzerothAdmin/AzerothAdmin.toc
+          grep -F '## X-Release-Tag: v1.0.0' AzerothAdmin/AzerothAdmin.toc
+      - name: Install Lua 5.1
+        run: sudo apt-get update >/dev/null && sudo apt-get install -y lua5.1 >/dev/null
+      - name: Parse all TOC Lua with Lua 5.1
+        run: |
+          python - <<'PY' > /tmp/toc-lua.txt
+          from pathlib import Path
+          root=Path('AzerothAdmin')
+          for raw in (root/'AzerothAdmin.toc').read_text(encoding='utf-8').splitlines():
+              line=raw.strip()
+              if line and not line.startswith('##') and line.lower().endswith('.lua'):
+                  print(root / line.replace('\\','/'))
+          PY
+          test "$(wc -l < /tmp/toc-lua.txt)" -eq 63
+          while IFS= read -r file; do luac5.1 -p "$file"; done < /tmp/toc-lua.txt
+      - name: Verify manifest and build release asset
+        run: |
+          mkdir -p dist
+          python - <<'PY'
+          import hashlib,zipfile
+          from pathlib import Path
+          root=Path('AzerothAdmin'); mf=root/'FILE_MANIFEST.sha256'; listed={}
+          for line in mf.read_text(encoding='utf-8').splitlines():
+              if line.strip(): d,r=line.split(None,1); listed[r.strip()]=d
+          files=sorted(p for p in root.rglob('*') if p.is_file() and p!=mf)
+          assert len(files)==len(listed)
+          for p in files: assert listed[p.relative_to(root).as_posix()]==hashlib.sha256(p.read_bytes()).hexdigest(),p
+          out=Path('dist/AzerothAdmin_MoP_5.4.8_v1.0.0_FULL.zip')
+          with zipfile.ZipFile(out,'w',compression=zipfile.ZIP_STORED,allowZip64=True) as z:
+              for p in sorted(x for x in root.rglob('*') if x.is_file()): z.write(p,p.as_posix())
+          with zipfile.ZipFile(out) as z: assert z.testzip() is None
+          digest=hashlib.sha256(out.read_bytes()).hexdigest()
+          Path(str(out)+'.sha256').write_text(f'{digest}  {out.name}\n',encoding='utf-8')
+          assert out.stat().st_size > 16000000
+          print(out.stat().st_size,digest)
+          PY
+      - name: Create or update stable GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          ZIP='dist/AzerothAdmin_MoP_5.4.8_v1.0.0_FULL.zip'
+          SHA="${ZIP}.sha256"
+          NOTES='docs/releases/v1.0.0/RELEASE_NOTES.md'
+          if gh release view v1.0.0 >/dev/null 2>&1; then
+            gh release upload v1.0.0 "$ZIP" "$SHA" --clobber
+            gh release edit v1.0.0 --title 'AzerothAdmin MoP 5.4.8 v1.0.0' --notes-file "$NOTES" --latest
+          else
+            gh release create v1.0.0 "$ZIP" "$SHA" --target "$GITHUB_SHA" --title 'AzerothAdmin MoP 5.4.8 v1.0.0' --notes-file "$NOTES" --latest
+          fi
