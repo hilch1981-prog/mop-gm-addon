@@ -25,87 +25,87 @@ jobs:
           set -euo pipefail
           git fetch --force origin '+refs/heads/*:refs/remotes/origin/*' '+refs/tags/*:refs/tags/*'
           cat > /tmp/r7-blobs.txt <<'EOF'
-94eec46cca1e540755825e0a32da4ff91771fe7e 4132 AzerothAdmin/AzerothAdmin.toc
-8c2c3e4d7e015c10ac743f2c5f206b6f7ae246f6 2416769 AzerothAdmin/Data/Generated/Creatures.lua
-ef9051b8f2a377d69bde9a8e81750a98215866fb 4129392 AzerothAdmin/Data/Generated/Items.lua
-7114035efc490db0e21ab91caec7f65f06be80a2 838332 AzerothAdmin/Data/Generated/Quests.lua
-1e0516228bddce31b59b52fccf47644b7d96b217 434 AzerothAdmin/Data/Generated/SourceInfo.lua
-b59b457fc0b8a54c2cffb0ee10b5db648a7b641d 85191 AzerothAdmin/Data/Generated/Teleports.lua
-0730956ea718ccd15c522120c9ac2597e2d69c33 3741 AzerothAdmin/Data/MoP/DatabaseCatalog.lua
-313b84c7ac59810824220281ca91b9ee9e17032e 1481478 AzerothAdmin/Data/MoP/ItemSources.lua
-8eafe8a285ebb6f37f15d77aea5d50dce81326c3 258550 AzerothAdmin/Data/MoP/LegacyItemCategories.lua
-8f17a38aa742f33741a8d462b115d191a702c7c3 1763 AzerothAdmin/Data/MoP/Load.lua
-b5af771bd1d4d5ce6d1019532948cb49ab1fcf41 759697 AzerothAdmin/Data/MoP/ProfessionDetails.lua
-2afe5973fa25164432b4f5fc3a84e7618f540e62 46159 AzerothAdmin/Data/MoP/Professions.lua
-18417e4d2503793601e5eeef7f33b64dae730304 874 AzerothAdmin/Data/MoP/QuestLocationAudit.json
-982f224924f7c360197b53e6fe7f79e207c3ce3e 5240484 AzerothAdmin/Data/MoP/QuestLocations.lua
-678acfa2191121e6c61ab4f5f427df4f5acbf899 2135 AzerothAdmin/Data/MoP/SourceInfo.lua
-8c28934fc107597d80f5be2c80866f3f1947886b 40983 AzerothAdmin/Data/MoP/TeleportDbNames.lua
-130d059c3bb3c82c2ab667399c87525ba0661b72 254403 AzerothAdmin/Data/MoP/TeleportMeta.lua
-7e28e44af88542e4dbae04f337a95ee577a3a185 4873 AzerothAdmin/Data/MoP/Teleports.lua
-dfbd47254727c4a875f6b2642b8c63110c7789d6 2564 AzerothAdmin/Embedded/BlueItemInfo3/Icon.blp
-dfbd47254727c4a875f6b2642b8c63110c7789d6 2564 AzerothAdmin/Embedded/BlueItemInfo3/ItemInfoR3.blp
-c4ff2f2a19df4ad904f6205acd37e054d3279bff 7396 AzerothAdmin/FILE_MANIFEST.sha256
-77f648a911c2e801e618905da508c9a53e6f59c4 11002 AzerothAdmin/Framework/Bootstrap.lua
-d818301e3a9c8b318415142f56a594a67fcf8914 3736 AzerothAdmin/Framework/CommandRegistry.lua
-c1e8c7be6909d1f4e734de2aeffe88bcde43fc0d 8697 AzerothAdmin/Framework/DataRegistry.lua
-431ddba5dceb0fa1424d0b815416dfe0eb95ee89 265 AzerothAdmin/Framework/FeatureLocalization.lua
-de54e06f4927d9194ea5738cbfd00e759973ca6d 211 AzerothAdmin/Framework/LocaleFont.lua
-af3b6df23477be0a037f9106ec0990dc7ef19991 2590 AzerothAdmin/Framework/Localization.lua
-c7faf4abfd93ddf93079662afc14febc526a151d 1333 AzerothAdmin/Framework/ModuleRegistry.lua
-14938ca1817cb53ccfb95631d1a38767535fed3e 11037 AzerothAdmin/Framework/UIComponents.lua
-46c153658c0e3f6e30998c2c10d70d78f0454409 604 AzerothAdmin/Framework/UILocalization.lua
-f288702d2fa16d3cdf0035b15a9fcbc552cd88e7 35149 AzerothAdmin/LICENSE
-0fd40246ddaf22ad48635c98e36e7f5f3b817513 21489 AzerothAdmin/Locales/enUS.lua
-90914007c9ab14bfb8bba48e769569e84c7452cb 23564 AzerothAdmin/Locales/koKR.lua
-ec880e71a5a854a19d6aa2643464174dee3367c6 4736 AzerothAdmin/Locales/ruRU.lua
-2f32184dca3d84b5ba6008b2bd79ab9df5aef43a 3630 AzerothAdmin/Locales/zhCN.lua
-c4ff9242990ae399c38886ac07bf05be24a444ae 3636 AzerothAdmin/Locales/zhTW.lua
-d36eab498b33a4524c0f088026d5bfd2a97a8b48 1689 AzerothAdmin/Modules/Bank/Module.lua
-c198bacf016439743662b80a1a6aa2589dcf7191 356 AzerothAdmin/Modules/Bank/Registration.lua
-de5773f950c4207cded1038b867c8463ab5df6bf 25987 AzerothAdmin/Modules/Commands/CommandMeta.lua
-03efb4671dd3989790de7219ba50030aaf0614b4 1275 AzerothAdmin/Modules/Commands/Module.lua
-db5356829868c2f6ccea89d8f61d7beb661cb3fe 404 AzerothAdmin/Modules/Commands/Registration.lua
-260ca8e517130e368b34bb0642b879ce1c1617dc 1495 AzerothAdmin/Modules/Creatures/Module.lua
-7f303d7ccfea4b11eb524c96baa32e1d34252e98 381 AzerothAdmin/Modules/Creatures/Registration.lua
-bb82e4702c72422ad68d14276caeaf2b940ece60 3597 AzerothAdmin/Modules/Database/Module.lua
-ac6463b817d8b0ceaa9615c28f1772a5d58667a3 368 AzerothAdmin/Modules/Database/Registration.lua
-2c3b3b682298cbbbdf2edcebac01d61f096a58a7 1253 AzerothAdmin/Modules/Integrations/Module.lua
-d7a1c6e5cadfc3478480d8e37101d912ea8fa147 380 AzerothAdmin/Modules/Integrations/Registration.lua
-1bd5063ea1a8f9f6245f9fc3442983eecab6dd20 33393 AzerothAdmin/Modules/ItemBrowser/Module.lua
-99bc10ec120d52ec2311cfd9be0eb1f08f6a2f01 378 AzerothAdmin/Modules/ItemBrowser/Registration.lua
-632a94fdf3d72d8cec1d7eb1a1edc190d035cf4e 4153 AzerothAdmin/Modules/Language/Module.lua
-b30dbf2216e014abf94ad5ed18b48680725d92c5 358 AzerothAdmin/Modules/Language/Registration.lua
-a067586561857f94031ee0016b0a886e05012bd1 647 AzerothAdmin/Modules/PlayerBot/Module.lua
-03cd3337160764f1f3bd4b942ccce1091035139a 325 AzerothAdmin/Modules/PlayerBot/Registration.lua
-d62368c8a7aa5fe98c13fd3675e0fa8bb8dbfeff 54352 AzerothAdmin/Modules/ProfessionInfo/Module.lua
-5dbbf37c9385dfccfe1b9eaff8fca8e490e52842 477 AzerothAdmin/Modules/ProfessionInfo/Registration.lua
-65e92f918d1cb5e5a378c1f408c76c7e8c8b266b 44573 AzerothAdmin/Modules/QuestHelper/Module.lua
-bb23561ffaa959cb4b264ad912395c2069a3505d 469 AzerothAdmin/Modules/QuestHelper/Registration.lua
-00acf13a294d609f284b3c0d4e30dead34dd39dd 2112 AzerothAdmin/Modules/Revive/Module.lua
-9abe6dd63e7d14ad2063ab23b00b3837d0a2b7fa 362 AzerothAdmin/Modules/Revive/Registration.lua
-678b9592693e05aabea5225ad3a46da8cea4d2fd 5910 AzerothAdmin/Modules/Search/Module.lua
-60df453cc052582892d28de2fe6db4af90dfda68 362 AzerothAdmin/Modules/Search/Registration.lua
-569cb813999b722103ed58d9e3a97296fed21ce4 6713 AzerothAdmin/Modules/Shell/Core.lua
-dc74f877f9b9ea398bb6c274d2342ea7102e7d66 393 AzerothAdmin/Modules/Shell/Registration.lua
-9dee0190d6759f04497935d0489e24b25a1314a5 33832 AzerothAdmin/Modules/Shell/UI.lua
-f701a598e5627fa0e5d25849be95e163dbbdb7f1 26618 AzerothAdmin/Modules/Teleports/Module.lua
-29e7601a25f7e02538be746fced7ff81018b73d9 371 AzerothAdmin/Modules/Teleports/Registration.lua
-981c59ae5ab80c3d8797bf439f261ba0a08caba4 498 AzerothAdmin/Modules/Verification/Registration.lua
-7c9b8bee29b4c4a65adae48cba020763818e9464 1792 AzerothAdmin/Modules/Verification/StaticChecks.lua
-db1bc7b0f006ed90531f26ee71bca8a8096d0c3f 7785 AzerothAdmin/README_KR.txt
-62a0af5f37e167ee05d4a45e05a6ab51bf998636 10481 AzerothAdmin/Tests/RuntimeSelfTest.lua
-98fffbc854212a317797403b4b35905065bb5c91 65580 AzerothAdmin/Textures/HobbyistCreatorR3.tga
-98fffbc854212a317797403b4b35905065bb5c91 65580 AzerothAdmin/Textures/HobbyistIcon.tga
-2d6f624bc229f4030b584526deda49e9c8374e78 16428 AzerothAdmin/Textures/MinimapRing.tga
-2d6f624bc229f4030b584526deda49e9c8374e78 16428 AzerothAdmin/Textures/MinimapRingR3.tga
-a1620cb8e4d4dfe898ea62320fd076675a26e0b8 1068 AzerothAdmin/Textures/icon.tga
-a1620cb8e4d4dfe898ea62320fd076675a26e0b8 1068 AzerothAdmin/Textures/icon2.tga
-44e3bf930085294724a2690c2514369f9847f81a 2050 AzerothAdmin/USER_REGRESSION_R4.md
-9319cb4e2530d5be6da788d2b6010f6e3e801b45 725 AzerothAdmin/USER_REGRESSION_R5.md
-a2f783e28e81e2bc7adff016a8790dff3a4e85cc 1475 AzerothAdmin/USER_REGRESSION_R6.md
-6845a0857479a8738eb9ca5584dc90052365f316 2734 AzerothAdmin/USER_REGRESSION_R7.md
-EOF
+          94eec46cca1e540755825e0a32da4ff91771fe7e 4132 AzerothAdmin/AzerothAdmin.toc
+          8c2c3e4d7e015c10ac743f2c5f206b6f7ae246f6 2416769 AzerothAdmin/Data/Generated/Creatures.lua
+          ef9051b8f2a377d69bde9a8e81750a98215866fb 4129392 AzerothAdmin/Data/Generated/Items.lua
+          7114035efc490db0e21ab91caec7f65f06be80a2 838332 AzerothAdmin/Data/Generated/Quests.lua
+          1e0516228bddce31b59b52fccf47644b7d96b217 434 AzerothAdmin/Data/Generated/SourceInfo.lua
+          b59b457fc0b8a54c2cffb0ee10b5db648a7b641d 85191 AzerothAdmin/Data/Generated/Teleports.lua
+          0730956ea718ccd15c522120c9ac2597e2d69c33 3741 AzerothAdmin/Data/MoP/DatabaseCatalog.lua
+          313b84c7ac59810824220281ca91b9ee9e17032e 1481478 AzerothAdmin/Data/MoP/ItemSources.lua
+          8eafe8a285ebb6f37f15d77aea5d50dce81326c3 258550 AzerothAdmin/Data/MoP/LegacyItemCategories.lua
+          8f17a38aa742f33741a8d462b115d191a702c7c3 1763 AzerothAdmin/Data/MoP/Load.lua
+          b5af771bd1d4d5ce6d1019532948cb49ab1fcf41 759697 AzerothAdmin/Data/MoP/ProfessionDetails.lua
+          2afe5973fa25164432b4f5fc3a84e7618f540e62 46159 AzerothAdmin/Data/MoP/Professions.lua
+          18417e4d2503793601e5eeef7f33b64dae730304 874 AzerothAdmin/Data/MoP/QuestLocationAudit.json
+          982f224924f7c360197b53e6fe7f79e207c3ce3e 5240484 AzerothAdmin/Data/MoP/QuestLocations.lua
+          678acfa2191121e6c61ab4f5f427df4f5acbf899 2135 AzerothAdmin/Data/MoP/SourceInfo.lua
+          8c28934fc107597d80f5be2c80866f3f1947886b 40983 AzerothAdmin/Data/MoP/TeleportDbNames.lua
+          130d059c3bb3c82c2ab667399c87525ba0661b72 254403 AzerothAdmin/Data/MoP/TeleportMeta.lua
+          7e28e44af88542e4dbae04f337a95ee577a3a185 4873 AzerothAdmin/Data/MoP/Teleports.lua
+          dfbd47254727c4a875f6b2642b8c63110c7789d6 2564 AzerothAdmin/Embedded/BlueItemInfo3/Icon.blp
+          dfbd47254727c4a875f6b2642b8c63110c7789d6 2564 AzerothAdmin/Embedded/BlueItemInfo3/ItemInfoR3.blp
+          c4ff2f2a19df4ad904f6205acd37e054d3279bff 7396 AzerothAdmin/FILE_MANIFEST.sha256
+          77f648a911c2e801e618905da508c9a53e6f59c4 11002 AzerothAdmin/Framework/Bootstrap.lua
+          d818301e3a9c8b318415142f56a594a67fcf8914 3736 AzerothAdmin/Framework/CommandRegistry.lua
+          c1e8c7be6909d1f4e734de2aeffe88bcde43fc0d 8697 AzerothAdmin/Framework/DataRegistry.lua
+          431ddba5dceb0fa1424d0b815416dfe0eb95ee89 265 AzerothAdmin/Framework/FeatureLocalization.lua
+          de54e06f4927d9194ea5738cbfd00e759973ca6d 211 AzerothAdmin/Framework/LocaleFont.lua
+          af3b6df23477be0a037f9106ec0990dc7ef19991 2590 AzerothAdmin/Framework/Localization.lua
+          c7faf4abfd93ddf93079662afc14febc526a151d 1333 AzerothAdmin/Framework/ModuleRegistry.lua
+          14938ca1817cb53ccfb95631d1a38767535fed3e 11037 AzerothAdmin/Framework/UIComponents.lua
+          46c153658c0e3f6e30998c2c10d70d78f0454409 604 AzerothAdmin/Framework/UILocalization.lua
+          f288702d2fa16d3cdf0035b15a9fcbc552cd88e7 35149 AzerothAdmin/LICENSE
+          0fd40246ddaf22ad48635c98e36e7f5f3b817513 21489 AzerothAdmin/Locales/enUS.lua
+          90914007c9ab14bfb8bba48e769569e84c7452cb 23564 AzerothAdmin/Locales/koKR.lua
+          ec880e71a5a854a19d6aa2643464174dee3367c6 4736 AzerothAdmin/Locales/ruRU.lua
+          2f32184dca3d84b5ba6008b2bd79ab9df5aef43a 3630 AzerothAdmin/Locales/zhCN.lua
+          c4ff9242990ae399c38886ac07bf05be24a444ae 3636 AzerothAdmin/Locales/zhTW.lua
+          d36eab498b33a4524c0f088026d5bfd2a97a8b48 1689 AzerothAdmin/Modules/Bank/Module.lua
+          c198bacf016439743662b80a1a6aa2589dcf7191 356 AzerothAdmin/Modules/Bank/Registration.lua
+          de5773f950c4207cded1038b867c8463ab5df6bf 25987 AzerothAdmin/Modules/Commands/CommandMeta.lua
+          03efb4671dd3989790de7219ba50030aaf0614b4 1275 AzerothAdmin/Modules/Commands/Module.lua
+          db5356829868c2f6ccea89d8f61d7beb661cb3fe 404 AzerothAdmin/Modules/Commands/Registration.lua
+          260ca8e517130e368b34bb0642b879ce1c1617dc 1495 AzerothAdmin/Modules/Creatures/Module.lua
+          7f303d7ccfea4b11eb524c96baa32e1d34252e98 381 AzerothAdmin/Modules/Creatures/Registration.lua
+          bb82e4702c72422ad68d14276caeaf2b940ece60 3597 AzerothAdmin/Modules/Database/Module.lua
+          ac6463b817d8b0ceaa9615c28f1772a5d58667a3 368 AzerothAdmin/Modules/Database/Registration.lua
+          2c3b3b682298cbbbdf2edcebac01d61f096a58a7 1253 AzerothAdmin/Modules/Integrations/Module.lua
+          d7a1c6e5cadfc3478480d8e37101d912ea8fa147 380 AzerothAdmin/Modules/Integrations/Registration.lua
+          1bd5063ea1a8f9f6245f9fc3442983eecab6dd20 33393 AzerothAdmin/Modules/ItemBrowser/Module.lua
+          99bc10ec120d52ec2311cfd9be0eb1f08f6a2f01 378 AzerothAdmin/Modules/ItemBrowser/Registration.lua
+          632a94fdf3d72d8cec1d7eb1a1edc190d035cf4e 4153 AzerothAdmin/Modules/Language/Module.lua
+          b30dbf2216e014abf94ad5ed18b48680725d92c5 358 AzerothAdmin/Modules/Language/Registration.lua
+          a067586561857f94031ee0016b0a886e05012bd1 647 AzerothAdmin/Modules/PlayerBot/Module.lua
+          03cd3337160764f1f3bd4b942ccce1091035139a 325 AzerothAdmin/Modules/PlayerBot/Registration.lua
+          d62368c8a7aa5fe98c13fd3675e0fa8bb8dbfeff 54352 AzerothAdmin/Modules/ProfessionInfo/Module.lua
+          5dbbf37c9385dfccfe1b9eaff8fca8e490e52842 477 AzerothAdmin/Modules/ProfessionInfo/Registration.lua
+          65e92f918d1cb5e5a378c1f408c76c7e8c8b266b 44573 AzerothAdmin/Modules/QuestHelper/Module.lua
+          bb23561ffaa959cb4b264ad912395c2069a3505d 469 AzerothAdmin/Modules/QuestHelper/Registration.lua
+          00acf13a294d609f284b3c0d4e30dead34dd39dd 2112 AzerothAdmin/Modules/Revive/Module.lua
+          9abe6dd63e7d14ad2063ab23b00b3837d0a2b7fa 362 AzerothAdmin/Modules/Revive/Registration.lua
+          678b9592693e05aabea5225ad3a46da8cea4d2fd 5910 AzerothAdmin/Modules/Search/Module.lua
+          60df453cc052582892d28de2fe6db4af90dfda68 362 AzerothAdmin/Modules/Search/Registration.lua
+          569cb813999b722103ed58d9e3a97296fed21ce4 6713 AzerothAdmin/Modules/Shell/Core.lua
+          dc74f877f9b9ea398bb6c274d2342ea7102e7d66 393 AzerothAdmin/Modules/Shell/Registration.lua
+          9dee0190d6759f04497935d0489e24b25a1314a5 33832 AzerothAdmin/Modules/Shell/UI.lua
+          f701a598e5627fa0e5d25849be95e163dbbdb7f1 26618 AzerothAdmin/Modules/Teleports/Module.lua
+          29e7601a25f7e02538be746fced7ff81018b73d9 371 AzerothAdmin/Modules/Teleports/Registration.lua
+          981c59ae5ab80c3d8797bf439f261ba0a08caba4 498 AzerothAdmin/Modules/Verification/Registration.lua
+          7c9b8bee29b4c4a65adae48cba020763818e9464 1792 AzerothAdmin/Modules/Verification/StaticChecks.lua
+          db1bc7b0f006ed90531f26ee71bca8a8096d0c3f 7785 AzerothAdmin/README_KR.txt
+          62a0af5f37e167ee05d4a45e05a6ab51bf998636 10481 AzerothAdmin/Tests/RuntimeSelfTest.lua
+          98fffbc854212a317797403b4b35905065bb5c91 65580 AzerothAdmin/Textures/HobbyistCreatorR3.tga
+          98fffbc854212a317797403b4b35905065bb5c91 65580 AzerothAdmin/Textures/HobbyistIcon.tga
+          2d6f624bc229f4030b584526deda49e9c8374e78 16428 AzerothAdmin/Textures/MinimapRing.tga
+          2d6f624bc229f4030b584526deda49e9c8374e78 16428 AzerothAdmin/Textures/MinimapRingR3.tga
+          a1620cb8e4d4dfe898ea62320fd076675a26e0b8 1068 AzerothAdmin/Textures/icon.tga
+          a1620cb8e4d4dfe898ea62320fd076675a26e0b8 1068 AzerothAdmin/Textures/icon2.tga
+          44e3bf930085294724a2690c2514369f9847f81a 2050 AzerothAdmin/USER_REGRESSION_R4.md
+          9319cb4e2530d5be6da788d2b6010f6e3e801b45 725 AzerothAdmin/USER_REGRESSION_R5.md
+          a2f783e28e81e2bc7adff016a8790dff3a4e85cc 1475 AzerothAdmin/USER_REGRESSION_R6.md
+          6845a0857479a8738eb9ca5584dc90052365f316 2734 AzerothAdmin/USER_REGRESSION_R7.md
+          EOF
           : > /tmp/found.txt
           : > /tmp/missing.txt
           while read -r sha size path; do
