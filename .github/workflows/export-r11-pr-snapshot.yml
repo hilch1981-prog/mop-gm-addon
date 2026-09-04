@@ -1,0 +1,32 @@
+name: Export R11 PR snapshot
+
+on:
+  push:
+    branches:
+      - ai/chatgpt/r11-source-sync
+    paths:
+      - '.github/workflows/export-r11-pr-snapshot.yml'
+      - '.r11-sync/SNAPSHOT_TRIGGER'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  export:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Archive current addon tree
+        run: |
+          tar -cJf AzerothAdmin-current.tar.xz AzerothAdmin
+          sha256sum AzerothAdmin-current.tar.xz > AzerothAdmin-current.tar.xz.sha256
+      - name: Upload current addon snapshot
+        uses: actions/upload-artifact@v4
+        with:
+          name: r11-pr-current-addon-snapshot
+          path: |
+            AzerothAdmin-current.tar.xz
+            AzerothAdmin-current.tar.xz.sha256
+          if-no-files-found: error
+          retention-days: 7
