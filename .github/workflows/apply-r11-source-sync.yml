@@ -21,34 +21,11 @@ jobs:
         with:
           ref: ai/chatgpt/r11-source-sync
           fetch-depth: 0
-
-      - name: Probe retained v1 delta integrity
-        run: |
-          set -euo pipefail
-          git fetch origin release/v1.0.0-stable:refs/remotes/origin/release/v1.0.0-stable
-          rm -f /tmp/v1-delta.tar.xz
-          for n in 000 001 002 003; do
-            git show "origin/release/v1.0.0-stable:.release-seed/v1-delta.part-${n}" > "/tmp/part-${n}"
-            printf 'part-%s bytes=' "$n"
-            wc -c < "/tmp/part-${n}"
-            sha256sum "/tmp/part-${n}"
-            cat "/tmp/part-${n}" >> /tmp/v1-delta.tar.xz
-          done
-          echo 'combined:'
-          wc -c /tmp/v1-delta.tar.xz
-          sha256sum /tmp/v1-delta.tar.xz
-          file /tmp/v1-delta.tar.xz
-          xz -t /tmp/v1-delta.tar.xz
-          tar -tJf /tmp/v1-delta.tar.xz | tee /tmp/v1-delta-files.txt
-          printf 'entries='
-          wc -l < /tmp/v1-delta-files.txt
-
       - name: Archive current addon source
         run: |
           set -euo pipefail
           tar -cJf AzerothAdmin-current.tar.xz AzerothAdmin
           sha256sum AzerothAdmin-current.tar.xz > AzerothAdmin-current.tar.xz.sha256
-
       - name: Upload current addon snapshot
         uses: actions/upload-artifact@v4
         with:
