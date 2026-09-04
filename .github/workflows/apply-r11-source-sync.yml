@@ -20,12 +20,32 @@ jobs:
           ref: ai/chatgpt/r11-source-sync
           fetch-depth: 0
 
-      - name: Restore canonical R7 main addon baseline
+      - name: Restore packaged canonical R7 addon baseline
+        shell: bash
         run: |
           set -euo pipefail
-          git fetch origin main
-          git rm -r --ignore-unmatch AzerothAdmin
-          git checkout origin/main -- AzerothAdmin
+          shopt -s nullglob
+          parts=(tools/seeds/r7-source-overlay.tar.xz.b64.part-*)
+          test "${#parts[@]}" -gt 0
+          printf 'R7 seed parts: %s\n' "${#parts[@]}"
+          cat "${parts[@]}" > /tmp/r7-source-overlay.tar.xz.b64
+          base64 -d /tmp/r7-source-overlay.tar.xz.b64 > /tmp/r7-source-overlay.tar.xz
+          xz -t /tmp/r7-source-overlay.tar.xz
+          mkdir -p /tmp/r7-overlay
+          tar -xJf /tmp/r7-source-overlay.tar.xz -C /tmp/r7-overlay
+          r7_toc="$(find /tmp/r7-overlay -type f -path '*/AzerothAdmin/AzerothAdmin.toc' -print -quit)"
+          test -n "$r7_toc"
+          r7_addon="$(dirname "$r7_toc")"
+          echo "Restoring R7 addon from: $r7_addon"
+          rm -rf AzerothAdmin
+          cp -a "$r7_addon" AzerothAdmin
+          test -f AzerothAdmin/AzerothAdmin.toc
+          test -f AzerothAdmin/AzerothAdmin.lua
+          test -f AzerothAdmin/Data/MoP/SourceInfo.lua
+          test -f AzerothAdmin/Locale/Locale.lua
+          test -f AzerothAdmin/Modules/Commands.lua
+          printf 'R7 baseline files: '
+          find AzerothAdmin -type f | wc -l
 
       - name: Reconstruct verified R7 to R11 patch
         run: |
@@ -33,11 +53,13 @@ jobs:
           cat .r11-sync/patch.part-*.b64 > /tmp/r11.patch.xz.b64
           base64 -d /tmp/r11.patch.xz.b64 > /tmp/r11.patch.xz
           echo '45d0f9ab4865ca2a1072848f95d09b03e8a896c915d4e26c3c78a0be57548e6c  /tmp/r11.patch.xz' | sha256sum -c -
+          xz -t /tmp/r11.patch.xz
           xz -dc /tmp/r11.patch.xz > /tmp/r11.patch
 
-      - name: Apply exact R11 game-test source patch
+      - name: Verify and apply exact R11 game-test source patch
         run: |
           set -euo pipefail
+          patch --dry-run -p1 < /tmp/r11.patch
           patch -p1 < /tmp/r11.patch
 
       - name: Validate R11 package contract
@@ -69,6 +91,13 @@ jobs:
           test "$(wc -l < /tmp/toc-lua.txt)" -eq 64
           while IFS= read -r file; do luac5.1 -p "$file"; done < /tmp/toc-lua.txt
 
+      - name: Build verified R11 game-test ZIP
+        run: |
+          set -euo pipefail
+          rm -f AzerothAdmin_3.5.0-548-r11-GAME-TEST-FULL.zip
+          zip -qr AzerothAdmin_3.5.0-548-r11-GAME-TEST-FULL.zip AzerothAdmin
+          echo '8a452840a5fffbe57bd2664b067c448bd6efabfc3c1216c1d798515359fd1090  AzerothAdmin_3.5.0-548-r11-GAME-TEST-FULL.zip' | sha256sum -c -
+
       - name: Commit synchronized R11 source
         run: |
           set -euo pipefail
@@ -76,6 +105,6 @@ jobs:
           rm -f .github/workflows/apply-r11-source-sync.yml
           git config user.name 'Hobbyist'
           git config user.email 'hilch1981@gmail.com'
-          git add -A
+          git add -A AzerothAdmin .r11-sync .github/workflows/apply-r11-source-sync.yml || true
           git commit -m 'Sync R11 full game-test source'
           git push origin HEAD:ai/chatgpt/r11-source-sync
