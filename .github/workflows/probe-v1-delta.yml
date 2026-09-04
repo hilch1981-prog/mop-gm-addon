@@ -1,0 +1,41 @@
+name: Probe retained v1 delta
+
+on:
+  push:
+    branches:
+      - ai/chatgpt/r11-source-sync
+    paths:
+      - '.github/workflows/probe-v1-delta.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Reconstruct and inspect retained v1 delta
+        run: |
+          set -euo pipefail
+          git fetch origin release/v1.0.0-stable:refs/remotes/origin/release/v1.0.0-stable
+          rm -f /tmp/v1-delta.tar.xz
+          for n in 000 001 002 003; do
+            git show "origin/release/v1.0.0-stable:.release-seed/v1-delta.part-${n}" > "/tmp/part-${n}"
+            printf 'part-%s bytes=' "$n"
+            wc -c < "/tmp/part-${n}"
+            sha256sum "/tmp/part-${n}"
+            cat "/tmp/part-${n}" >> /tmp/v1-delta.tar.xz
+          done
+          echo 'combined:'
+          wc -c /tmp/v1-delta.tar.xz
+          sha256sum /tmp/v1-delta.tar.xz
+          file /tmp/v1-delta.tar.xz
+          xz -t /tmp/v1-delta.tar.xz
+          mkdir -p /tmp/v1-delta-list
+          tar -tJf /tmp/v1-delta.tar.xz | tee /tmp/v1-delta-list/files.txt
+          printf 'entries='
+          wc -l < /tmp/v1-delta-list/files.txt
