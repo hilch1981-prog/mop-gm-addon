@@ -29,10 +29,10 @@ jobs:
           rm -rf AzerothAdmin
           git archive "$r7_commit" AzerothAdmin | tar -x
           test -f AzerothAdmin/AzerothAdmin.toc
-          test -f AzerothAdmin/AzerothAdmin.lua
-          test -f AzerothAdmin/Data/MoP/SourceInfo.lua
-          test -f AzerothAdmin/Locale/Locale.lua
-          test -f AzerothAdmin/Modules/Commands.lua
+          test -f AzerothAdmin/Framework/Bootstrap.lua
+          test -f AzerothAdmin/Data/Generated/SourceInfo.lua
+          test -f AzerothAdmin/Locales/enUS.lua
+          test -f AzerothAdmin/Modules/Commands/Module.lua
           printf 'R7 baseline files: '
           find AzerothAdmin -type f | wc -l
 
