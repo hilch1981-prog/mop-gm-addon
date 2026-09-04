@@ -9,7 +9,7 @@ on:
       - '.r11-sync/READY'
 
 permissions:
-  contents: write
+  contents: read
 
 jobs:
   apply-r11:
@@ -21,63 +21,17 @@ jobs:
         with:
           ref: ai/chatgpt/r11-source-sync
           fetch-depth: 0
-
-      - name: Restore canonical R7 main addon baseline
+      - name: Archive current addon source
         run: |
           set -euo pipefail
-          git fetch origin main
-          git rm -r --ignore-unmatch AzerothAdmin
-          git checkout origin/main -- AzerothAdmin
-
-      - name: Reconstruct verified R7 to R11 patch
-        run: |
-          set -euo pipefail
-          cat .r11-sync/patch.part-*.b64 > /tmp/r11.patch.xz.b64
-          base64 -d /tmp/r11.patch.xz.b64 > /tmp/r11.patch.xz
-          echo '45d0f9ab4865ca2a1072848f95d09b03e8a896c915d4e26c3c78a0be57548e6c  /tmp/r11.patch.xz' | sha256sum -c -
-          xz -dc /tmp/r11.patch.xz > /tmp/r11.patch
-
-      - name: Apply exact R11 game-test source patch
-        run: |
-          set -euo pipefail
-          patch -p1 < /tmp/r11.patch
-
-      - name: Validate R11 package contract
-        run: |
-          set -euo pipefail
-          grep -F '## Interface: 50400' AzerothAdmin/AzerothAdmin.toc
-          grep -F '## Version: 3.5.0-548-r11-battlepet-rc11' AzerothAdmin/AzerothAdmin.toc
-          grep -F 'Modules\\Integrations\\BattlePetDeathPicker.lua' AzerothAdmin/AzerothAdmin.toc
-          test -f AzerothAdmin/Modules/Integrations/BattlePetDeathPicker.lua
-          test -f AzerothAdmin/Data/MoP/AreaTableLocalizationAudit.json
-          test "$(find AzerothAdmin -type f | wc -l)" -eq 86
-          cd AzerothAdmin
-          sha256sum -c FILE_MANIFEST.sha256
-          test "$(wc -l < FILE_MANIFEST.sha256)" -eq 85
-
-      - name: Parse every TOC Lua file with Lua 5.1
-        run: |
-          set -euo pipefail
-          sudo apt-get update >/dev/null
-          sudo apt-get install -y lua5.1 >/dev/null
-          python3 - <<'PY' > /tmp/toc-lua.txt
-          from pathlib import Path
-          addon = Path('AzerothAdmin')
-          for raw in (addon / 'AzerothAdmin.toc').read_text(encoding='utf-8').splitlines():
-              line = raw.strip()
-              if line and not line.startswith('##') and line.lower().endswith('.lua'):
-                  print(addon / line.replace('\\\\', '/'))
-          PY
-          test "$(wc -l < /tmp/toc-lua.txt)" -eq 64
-          while IFS= read -r file; do luac5.1 -p "$file"; done < /tmp/toc-lua.txt
-
-      - name: Commit synchronized R11 source
-        run: |
-          set -euo pipefail
-          rm -rf .r11-sync
-          rm -f .github/workflows/apply-r11-source-sync.yml
-          git config user.name 'Hobbyist'
-          git config user.email 'hilch1981@gmail.com'
-          git add -A
-          git commit -m 'Sync R11 full game-test source'
-          git push origin HEAD:ai/chatgpt/r11-source-sync
+          tar -cJf AzerothAdmin-current.tar.xz AzerothAdmin
+          sha256sum AzerothAdmin-current.tar.xz > AzerothAdmin-current.tar.xz.sha256
+      - name: Upload current addon snapshot
+        uses: actions/upload-artifact@v4
+        with:
+          name: r11-pr-current-addon-snapshot
+          path: |
+            AzerothAdmin-current.tar.xz
+            AzerothAdmin-current.tar.xz.sha256
+          if-no-files-found: error
+          retention-days: 7
