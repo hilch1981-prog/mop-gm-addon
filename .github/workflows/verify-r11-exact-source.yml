@@ -1,0 +1,87 @@
+name: Verify exact R11 source
+
+on:
+  push:
+    branches: [ai/chatgpt/r11-source-sync]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Verify exact addon tree and manifest
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -f AzerothAdmin/AzerothAdmin.toc
+          test -f AzerothAdmin/USER_REGRESSION_R11.md
+          test -f AzerothAdmin/Modules/Integrations/BattlePetDeathPicker.lua
+          count=$(find AzerothAdmin -type f | wc -l | tr -d ' ')
+          echo "addon_file_count=$count"
+          test "$count" = "86"
+          python3 - <<'PY'
+          from pathlib import Path
+          import hashlib, re, sys
+          addon=Path('AzerothAdmin')
+          manifest=addon/'FILE_MANIFEST.sha256'
+          if not manifest.is_file():
+              raise SystemExit('missing FILE_MANIFEST.sha256')
+          checked=0
+          for raw in manifest.read_text(encoding='utf-8-sig').splitlines():
+              line=raw.strip()
+              if not line or line.startswith('#'):
+                  continue
+              m=re.match(r'^([0-9a-fA-F]{64})\s+\*?(.+)$', line)
+              if not m:
+                  raise SystemExit(f'bad manifest line: {raw!r}')
+              want, name=m.group(1).lower(), m.group(2).strip().replace('\\','/')
+              candidates=[addon/name, Path(name)]
+              if name.startswith('AzerothAdmin/'):
+                  candidates.insert(0, Path(name))
+              p=next((p for p in candidates if p.is_file()), None)
+              if p is None:
+                  raise SystemExit(f'missing manifest file: {name}')
+              got=hashlib.sha256(p.read_bytes()).hexdigest()
+              if got != want:
+                  raise SystemExit(f'hash mismatch: {name}: {got} != {want}')
+              checked += 1
+          if checked < 70:
+              raise SystemExit(f'manifest coverage unexpectedly low: {checked}')
+          print(f'manifest_checked={checked}')
+          PY
+
+      - name: Run repository static checks when available
+        shell: bash
+        run: |
+          set -euo pipefail
+          if test -f tools/static_addon_checks.py; then
+            python3 tools/static_addon_checks.py --addon AzerothAdmin
+          fi
+          if test -f tests/run_regression.py; then
+            python3 tests/run_regression.py
+          fi
+
+      - name: Clean temporary sync machinery after PASS
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -f .r11-sync/seed2.part-*.b64
+          rm -f .r11-sync/path-test.txt .r11-sync/direct-token-probe.txt .r11-sync/READY
+          rm -f .r11-sync/patch.part-*.b64
+          rm -f .github/workflows/apply-r11-source-sync.yml
+          mkdir -p .r11-sync
+          printf 'EXACT_R11_SOURCE_VERIFIED\nfiles=86\nverified_from=%s\n' "${GITHUB_SHA}" > .r11-sync/EXACT_SOURCE_VERIFIED
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add -A
+          if ! git diff --cached --quiet; then
+            git commit -m 'Verify exact R11 source and clean sync machinery'
+            git push origin HEAD:ai/chatgpt/r11-source-sync
+          fi
