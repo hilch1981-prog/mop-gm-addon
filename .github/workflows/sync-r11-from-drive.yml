@@ -1,0 +1,77 @@
+name: Sync R11 source from verified package
+
+on:
+  push:
+    branches:
+      - ai/chatgpt/r11-source-sync-clean2
+
+permissions:
+  contents: write
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ai/chatgpt/r11-source-sync-clean2
+          fetch-depth: 0
+
+      - name: Download verified R11 package
+        run: |
+          python -m pip install --quiet gdown
+          python -m gdown 1Hwu6rcbMHPt6eZGmQmaiz_6YwCOAvlK7 -O /tmp/r11.zip
+          echo "8a452840a5fffbe57bd2664b067c448bd6efabfc3c1216c1d798515359fd1090  /tmp/r11.zip" | sha256sum -c -
+
+      - name: Validate and stage exact R11 addon tree
+        run: |
+          rm -rf /tmp/r11
+          mkdir -p /tmp/r11
+          unzip -q /tmp/r11.zip -d /tmp/r11
+          test -f /tmp/r11/AzerothAdmin/AzerothAdmin.toc
+          grep -F "## Version: 3.5.0-548-r11-battlepet-rc11" /tmp/r11/AzerothAdmin/AzerothAdmin.toc
+          test "$(find /tmp/r11/AzerothAdmin -type f | wc -l)" -eq 86
+          test -f /tmp/r11/AzerothAdmin/Modules/Integrations/BattlePetDeathPicker.lua
+          rm -rf AzerothAdmin
+          cp -a /tmp/r11/AzerothAdmin ./AzerothAdmin
+          test "$(find AzerothAdmin -type f | wc -l)" -eq 86
+
+      - name: Verify package manifest and TOC runtime paths
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import hashlib
+          root = Path('AzerothAdmin')
+          manifest = root/'FILE_MANIFEST.sha256'
+          rows = []
+          for line in manifest.read_text(encoding='utf-8').splitlines():
+              if not line.strip():
+                  continue
+              digest, rel = line.split(None, 1)
+              rel = rel.strip()
+              p = root/rel
+              assert p.is_file(), rel
+              got = hashlib.sha256(p.read_bytes()).hexdigest()
+              assert got == digest, (rel, digest, got)
+              rows.append(rel)
+          assert len(rows) == 85, len(rows)
+          toc = (root/'AzerothAdmin.toc').read_text(encoding='utf-8').splitlines()
+          runtime = [x.strip().replace('\\','/') for x in toc if x.strip() and not x.startswith('##')]
+          assert len(runtime) == 64, len(runtime)
+          for rel in runtime:
+              assert (root/rel).is_file(), rel
+          print('R11_TREE_VERIFY_PASS', len(rows), len(runtime))
+          PY
+
+      - name: Commit exact R11 source tree
+        run: |
+          rm -f .github/workflows/sync-r11-from-drive.yml
+          git config user.name "ChatGPT Sync"
+          git config user.email "actions@users.noreply.github.com"
+          git add -A
+          if git diff --cached --quiet; then
+            echo "No changes to commit"
+            exit 0
+          fi
+          git commit -m "Sync exact R11 game-test source tree"
+          git push origin HEAD:ai/chatgpt/r11-source-sync-clean2
