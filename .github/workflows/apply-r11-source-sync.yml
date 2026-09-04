@@ -14,41 +14,26 @@ jobs:
   apply-r11:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout sync branch
+      - name: Checkout current main
         uses: actions/checkout@v4
         with:
-          ref: ai/chatgpt/r11-source-sync
-          fetch-depth: 0
-      - name: Fetch source-pinned R7 data extractors
-        shell: bash
-        run: |
-          set -euo pipefail
-          git fetch origin ai/chatgpt/r5-quest-tele-performance:refs/remotes/origin/ai/chatgpt/r5-quest-tele-performance
-          mkdir -p /tmp/r7-tools
-          for file in extract_r5_mop_data.py extract_r5_mop_data_v2.py extract_r5_mop_data_v3.py extract_r7_mop_data.py patch_r7_objective_types.py; do
-            git show "origin/ai/chatgpt/r5-quest-tele-performance:tools/${file}" > "/tmp/r7-tools/${file}"
-          done
-      - name: Checkout pinned MOP_V2_Repack authority
-        uses: actions/checkout@v4
-        with:
-          repository: hilch1981-prog/MOP_V2_Repack
-          ref: 0739d072f8f1f42523f04cca4b2607d88a01def4
-          path: server
+          ref: main
           fetch-depth: 1
-      - name: Regenerate R7 authority files
+      - name: Archive current main addon baseline
         shell: bash
         run: |
           set -euo pipefail
-          cp /tmp/r7-tools/*.py /tmp/
-          python /tmp/extract_r7_mop_data.py --server server --out /tmp/generated-r7
-          sha256sum /tmp/generated-r7/QuestLocations.lua /tmp/generated-r7/TeleportDbNames.lua /tmp/generated-r7/audit.json
-      - name: Upload regenerated authority files
+          tar -cJf /tmp/current-main-addon.tar.xz AzerothAdmin
+          sha256sum /tmp/current-main-addon.tar.xz
+          find AzerothAdmin -type f | sort > /tmp/current-main-files.txt
+          printf 'current_main_files='
+          wc -l < /tmp/current-main-files.txt
+      - name: Upload current main addon baseline
         uses: actions/upload-artifact@v4
         with:
-          name: r7-regenerated-authority-files
+          name: current-main-addon-baseline
           path: |
-            /tmp/generated-r7/QuestLocations.lua
-            /tmp/generated-r7/TeleportDbNames.lua
-            /tmp/generated-r7/audit.json
+            /tmp/current-main-addon.tar.xz
+            /tmp/current-main-files.txt
           if-no-files-found: error
           retention-days: 7
