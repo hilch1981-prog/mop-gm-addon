@@ -1,0 +1,181 @@
+name: Materialize exact R11 game-test source
+
+on:
+  push:
+    branches: [ai/chatgpt/r11-source-sync]
+    paths:
+      - '.r11-sync/SEED_VERIFIED'
+      - '.github/workflows/materialize-r11-source.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  materialize:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Verify exact R7 seed
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -f .r11-sync/SEED_VERIFIED
+          bad=0
+          while read -r name sha size; do
+            p=".r11-sync/r7seed.$name"
+            test -f "$p" || { echo "MISSING $name"; bad=1; continue; }
+            test "$(wc -c < "$p")" = "$size" || { echo "SIZE_MISMATCH $name"; bad=1; }
+            test "$(git hash-object "$p")" = "$sha" || { echo "SHA_MISMATCH $name"; bad=1; }
+          done < .r11-sync/r7seed-parts.manifest
+          test "$bad" = 0
+          cat .r11-sync/r7seed.part-*.b64 | base64 -d > /tmp/r7-seed.tar.xz
+          echo 'db04e41dedd5268aa8823ba4fd9f52a986a2ceeb9bc115bf3767a059caf53406  /tmp/r7-seed.tar.xz' | sha256sum -c -
+          test "$(wc -c < /tmp/r7-seed.tar.xz)" = 259348
+          xz -t /tmp/r7-seed.tar.xz
+
+      - name: Reconstruct exact R7 source
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -rf /tmp/r7root /tmp/generated-base /tmp/generated-r7 /tmp/r7tools /tmp/server
+          mkdir -p /tmp/r7root /tmp/generated-base /tmp/r7tools
+          tar -xJf /tmp/r7-seed.tar.xz -C /tmp/r7root
+          test -d /tmp/r7root/AzerothAdmin
+
+          git fetch origin main ai/chatgpt/r5-quest-tele-performance --no-tags
+          for f in Items.lua Quests.lua Creatures.lua Teleports.lua; do
+            git show "origin/main:AzerothAdmin/Data/Generated/$f" > "/tmp/generated-base/$f"
+            sed -i 's/AzerothAdminMoP/AzerothAdminMoP548/g' "/tmp/generated-base/$f"
+          done
+          echo '9aa93c507a03b19a5c3d36e883bd3193e903db3953921792b8ae839f630ee6d3  /tmp/generated-base/Items.lua' | sha256sum -c -
+          echo 'c08c443f72e9212e33f23c4f622ebb8ecbd92984700c7c5563da122e6cbf1116  /tmp/generated-base/Quests.lua' | sha256sum -c -
+          echo '94a93cd13fe4b0b64aa7f253c43925d22066f8cb27cb7bacd53459b014f6a493  /tmp/generated-base/Creatures.lua' | sha256sum -c -
+          echo '580236ba5e3ad7b3063dc22b37139b77ebe98a372192ec6d5e9fda1092f086cc  /tmp/generated-base/Teleports.lua' | sha256sum -c -
+          mkdir -p /tmp/r7root/AzerothAdmin/Data/Generated
+          cp /tmp/generated-base/*.lua /tmp/r7root/AzerothAdmin/Data/Generated/
+
+          for p in tools/extract_r5_mop_data.py tools/extract_r5_mop_data_v2.py tools/extract_r5_mop_data_v3.py tools/extract_r7_mop_data.py tools/patch_r7_objective_types.py; do
+            git show "origin/ai/chatgpt/r5-quest-tele-performance:$p" > "/tmp/r7tools/$(basename "$p")"
+          done
+
+          git clone --no-checkout https://github.com/hilch1981-prog/MOP_V2_Repack.git /tmp/server
+          git -C /tmp/server checkout 0739d072f8f1f42523f04cca4b2607d88a01def4
+          python3 /tmp/r7tools/extract_r7_mop_data.py --server /tmp/server --out /tmp/generated-r7
+
+          ql=$(find /tmp/generated-r7 -type f -name 'QuestLocations.lua' -print -quit)
+          td=$(find /tmp/generated-r7 -type f -name 'TeleportDbNames.lua' -print -quit)
+          qa=$(find /tmp/generated-r7 -type f -iname '*Quest*Audit*.json' -print -quit)
+          test -n "$ql"; test -n "$td"; test -n "$qa"
+
+          python3 - "$ql" "$qa" <<'PY'
+          import sys, re, json
+          ql, qa = sys.argv[1:]
+          s = open(ql, encoding='utf-8').read()
+          pat = r'(\{s=\d+,k="[cio]",c=\d+,id=\d+(?:,[ei]=\d+)?)' + r',t=\d+'
+          s2, n = re.subn(pat, r'\1', s)
+          if n != 17095:
+              raise SystemExit(f'QuestLocations normalization count {n} != 17095')
+          open(ql, 'w', encoding='utf-8', newline='').write(s2)
+          obj = json.load(open(qa, encoding='utf-8'))
+          obj.pop('objective_types_preserved', None)
+          obj.pop('objective_type_counts', None)
+          open(qa, 'w', encoding='utf-8', newline='').write(json.dumps(obj, ensure_ascii=False, indent=2))
+          PY
+
+          echo '782e3e15953973bc148889b98d2d13d40ae88ff33bb25ed89be932507e644db0  '"$ql" | sha256sum -c -
+          echo '537499880a4468be4799e647467c432169d10940e345707a19a46724b6759d6e  '"$td" | sha256sum -c -
+          echo '75241ff77041b740d640412c9a206c172d1770a9da161bc1720f27ca04f3e108  '"$qa" | sha256sum -c -
+          cp "$ql" /tmp/r7root/AzerothAdmin/Data/MoP/QuestLocations.lua
+          cp "$td" /tmp/r7root/AzerothAdmin/Data/MoP/TeleportDbNames.lua
+          audit_dest=$(awk '/Quest.*Audit.*\.json$/ {print $2; exit}' /tmp/r7root/AzerothAdmin/FILE_MANIFEST.sha256 || true)
+          audit_dest=${audit_dest#\*}
+          if [ -z "$audit_dest" ]; then audit_dest='Data/MoP/QuestLocationAudit.json'; fi
+          mkdir -p "/tmp/r7root/AzerothAdmin/$(dirname "$audit_dest")"
+          cp "$qa" "/tmp/r7root/AzerothAdmin/$audit_dest"
+
+          test "$(find /tmp/r7root/AzerothAdmin -type f | wc -l)" = 80
+          if ! (cd /tmp/r7root/AzerothAdmin && sha256sum -c FILE_MANIFEST.sha256); then
+            echo 'R7 FILE_MANIFEST validation failed'
+            exit 1
+          fi
+          echo 'R7_EXACT_PASS'
+
+      - name: Apply exact R11 patch
+        shell: bash
+        run: |
+          set -euo pipefail
+          cat .r11-sync/patch.part-*.b64 | base64 -d > /tmp/r11.patch.xz
+          echo '45d0f9ab4865ca2a1072848f95d09b03e8a896c915d4e26c3c78a0be57548e6c  /tmp/r11.patch.xz' | sha256sum -c -
+          xz -t /tmp/r11.patch.xz
+          xz -dc /tmp/r11.patch.xz > /tmp/r11.patch
+
+          rm -rf AzerothAdmin
+          cp -a /tmp/r7root/AzerothAdmin ./AzerothAdmin
+
+          applied=0
+          if git apply --check --unsafe-paths /tmp/r11.patch >/dev/null 2>&1; then
+            git apply --unsafe-paths /tmp/r11.patch
+            applied=1
+          else
+            for strip in 0 1 2 3; do
+              if patch --dry-run --batch -p$strip < /tmp/r11.patch >/dev/null 2>&1; then
+                patch --batch -p$strip < /tmp/r11.patch
+                applied=1
+                break
+              fi
+            done
+          fi
+          test "$applied" = 1
+          test "$(find AzerothAdmin -type f | wc -l)" = 86
+          if ! (cd AzerothAdmin && sha256sum -c FILE_MANIFEST.sha256); then
+            echo 'R11 FILE_MANIFEST validation failed'
+            exit 1
+          fi
+          echo 'R11_MANIFEST_PASS'
+
+      - name: Lua, TOC and static checks
+        shell: bash
+        run: |
+          set -euo pipefail
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq lua5.1
+          while IFS= read -r -d '' f; do luac5.1 -p "$f"; done < <(find AzerothAdmin -type f -name '*.lua' -print0)
+          python3 - <<'PY'
+          from pathlib import Path
+          root=Path('AzerothAdmin')
+          toc=root/'AzerothAdmin.toc'
+          missing=[]
+          for raw in toc.read_text(encoding='utf-8-sig').splitlines():
+              s=raw.strip()
+              if not s or s.startswith('#'):
+                  continue
+              if not s.lower().endswith(('.lua','.xml')):
+                  continue
+              p=root/Path(s.replace('\\','/'))
+              if not p.exists(): missing.append(s)
+          if missing:
+              raise SystemExit('Missing TOC files: '+', '.join(missing))
+          print('TOC_LOAD_PATHS_PASS')
+          PY
+          if [ -f tools/static_addon_checks.py ]; then
+            python3 tools/static_addon_checks.py --addon AzerothAdmin
+          fi
+          echo 'STATIC_VERIFY_PASS'
+
+      - name: Commit exact R11 source
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -A AzerothAdmin
+          if git diff --cached --quiet; then
+            echo 'R11 source already exact; no commit needed'
+          else
+            git commit -m 'Materialize exact R11 game-test source'
+            git push origin HEAD:ai/chatgpt/r11-source-sync
+          fi
