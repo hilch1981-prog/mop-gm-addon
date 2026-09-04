@@ -1,0 +1,193 @@
+name: Recover exact R11 source
+
+on:
+  push:
+    branches: [ai/chatgpt/r11-source-sync]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  recover:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Recover exact R7 then apply R11
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+          w=Path('.github/workflows/apply-r11-source-sync.yml')
+          if not w.exists():
+              # Exact R11 may already have been materialized/cleaned by the verifier.
+              if (Path('AzerothAdmin/USER_REGRESSION_R11.md').exists() and
+                  len([p for p in Path('AzerothAdmin').rglob('*') if p.is_file()]) == 86):
+                  Path('/tmp/already-r11').write_text('yes')
+                  raise SystemExit(0)
+              raise SystemExit('missing exact-R7 blob manifest workflow')
+          text=w.read_text(errors='replace')
+          pairs=[]
+          for line in text.splitlines():
+              m=re.search(r'\b([0-9a-f]{40})\b\s+\*?(AzerothAdmin/\S+)', line)
+              if not m:
+                  m=re.search(r'(AzerothAdmin/\S+)\s+\b([0-9a-f]{40})\b', line)
+                  if m: pairs.append((m.group(2),m.group(1)))
+              else: pairs.append((m.group(1),m.group(2)))
+          # de-duplicate while preserving paths
+          d={p:s for s,p in pairs}
+          if len(d) < 80:
+              raise SystemExit(f'expected 80 exact R7 blob entries, found {len(d)}')
+          Path('/tmp/r7-blobs.tsv').write_text('\n'.join(f'{s}\t{p}' for p,s in sorted(d.items()))+'\n')
+          print('exact_r7_blob_entries',len(d))
+          PY
+          if test -f /tmp/already-r11; then exit 0; fi
+
+          rm -rf /tmp/r7-partial /tmp/r7-work /tmp/canonical /tmp/server /tmp/generated-r7
+          mkdir -p /tmp/r7-partial /tmp/r7-work
+          shopt -s nullglob
+          parts=(.r11-sync/seed2.part-*.b64)
+          if (( ${#parts[@]} > 0 )); then
+            cat "${parts[@]}" | base64 -d > /tmp/r7-partial.xz
+            xz -dc /tmp/r7-partial.xz > /tmp/r7-partial.tar 2>/dev/null || true
+            tar -xf /tmp/r7-partial.tar -C /tmp/r7-partial --ignore-zeros 2>/dev/null || true
+            if test -d /tmp/r7-partial/AzerothAdmin; then cp -a /tmp/r7-partial/AzerothAdmin/. /tmp/r7-work/; fi
+          fi
+
+          git fetch origin main ai/chatgpt/r5-quest-tele-performance --force
+          git clone -q --mirror https://github.com/hilch1981-prog/azerothcore-gm-addon.git /tmp/canonical
+
+          python3 - <<'PY'
+          from pathlib import Path
+          import subprocess, os
+          expected={}
+          for line in Path('/tmp/r7-blobs.tsv').read_text().splitlines():
+              sha,path=line.split('\t',1); expected[path]=sha
+          out=Path('/tmp/r7-work')
+          # Keep only exact files recovered from partial seed.
+          for p in list(out.rglob('*')):
+              if not p.is_file(): continue
+              rel='AzerothAdmin/'+p.relative_to(out).as_posix()
+              want=expected.get(rel)
+              got=subprocess.check_output(['git','hash-object','--no-filters',str(p)],text=True).strip()
+              if want != got: p.unlink()
+          # Recover exact blobs directly from canonical history when object IDs match.
+          for rel,want in expected.items():
+              dst=out/rel.removeprefix('AzerothAdmin/')
+              if dst.is_file(): continue
+              ok=subprocess.run(['git','-C','/tmp/canonical','cat-file','-e',want+'^{blob}'],stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL).returncode==0
+              if ok:
+                  dst.parent.mkdir(parents=True,exist_ok=True)
+                  dst.write_bytes(subprocess.check_output(['git','-C','/tmp/canonical','cat-file','blob',want]))
+          # Same-path current-main candidate, plus namespace transform.
+          for rel,want in expected.items():
+              dst=out/rel.removeprefix('AzerothAdmin/')
+              if dst.is_file(): continue
+              src=rel
+              r=subprocess.run(['git','show','origin/main:'+src],stdout=subprocess.PIPE,stderr=subprocess.DEVNULL)
+              if r.returncode: continue
+              for data in (r.stdout, r.stdout.replace(b'AzerothAdminMoP',b'AzerothAdminMoP548')):
+                  got=subprocess.run(['git','hash-object','--stdin'],input=data,stdout=subprocess.PIPE).stdout.decode().strip()
+                  if got==want:
+                      dst.parent.mkdir(parents=True,exist_ok=True); dst.write_bytes(data); break
+          PY
+
+          # Reconstruct the four large Generated tables from main.
+          mkdir -p /tmp/r7-work/Data/Generated
+          for f in Items Quests Creatures Teleports; do
+            git show "origin/main:AzerothAdmin/Data/Generated/$f.lua" | sed 's/AzerothAdminMoP/AzerothAdminMoP548/g' > "/tmp/r7-work/Data/Generated/$f.lua"
+          done
+          echo '9aa93c507a03b19a5c3d36e883bd3193e903db3953921792b8ae839f630ee6d3  /tmp/r7-work/Data/Generated/Items.lua' | sha256sum -c -
+          echo 'c08c443f72e9212e33f23c4f622ebb8ecbd92984700c7c5563da122e6cbf1116  /tmp/r7-work/Data/Generated/Quests.lua' | sha256sum -c -
+          echo '94a93cd13fe4b0b64aa7f253c43925d22066f8cb27cb7bacd53459b014f6a493  /tmp/r7-work/Data/Generated/Creatures.lua' | sha256sum -c -
+          echo '580236ba5e3ad7b3063dc22b37139b77ebe98a372192ec6d5e9fda1092f086cc  /tmp/r7-work/Data/Generated/Teleports.lua' | sha256sum -c -
+
+          # Regenerate QuestLocations, TeleportDbNames and audit from pinned Chipa server authority.
+          for f in extract_r7_mop_data.py extract_r5_mop_data.py extract_r5_mop_data_v2.py extract_r5_mop_data_v3.py patch_r7_objective_types.py; do
+            git show "origin/ai/chatgpt/r5-quest-tele-performance:tools/$f" > "/tmp/$f" 2>/dev/null || true
+          done
+          git clone -q https://github.com/hilch1981-prog/MOP_V2_Repack.git /tmp/server
+          git -C /tmp/server checkout -q 0739d072f8f1f42523f04cca4b2607d88a01def4
+          python3 /tmp/extract_r7_mop_data.py --server /tmp/server --out /tmp/generated-r7
+          python3 - <<'PY'
+          from pathlib import Path
+          import re,json
+          q=Path('/tmp/generated-r7/QuestLocations.lua')
+          s=q.read_text()
+          s,n=re.subn(r'(\{s=\d+,k="[cio]",c=\d+,id=\d+(?:,[ei]=\d+)?)'+r',t=\d+',r'\1',s)
+          if n!=17095: raise SystemExit(f'objective normalization count {n}')
+          q.write_text(s)
+          audits=list(Path('/tmp/generated-r7').glob('*Audit*.json'))
+          if not audits: raise SystemExit('audit json not generated')
+          a=audits[0]; o=json.loads(a.read_text()); o.pop('objective_types_preserved',None); o.pop('objective_type_counts',None)
+          a.write_text(json.dumps(o,ensure_ascii=False,indent=2))
+          PY
+          mkdir -p /tmp/r7-work/Data/MoP
+          cp /tmp/generated-r7/QuestLocations.lua /tmp/r7-work/Data/MoP/QuestLocations.lua
+          cp /tmp/generated-r7/TeleportDbNames.lua /tmp/r7-work/Data/MoP/TeleportDbNames.lua
+          cp "$(find /tmp/generated-r7 -maxdepth 1 -name '*Audit*.json' -print -quit)" /tmp/r7-work/Data/MoP/QuestLocationAudit.json
+
+          # Verify exact 80-file R7 by Git blob IDs; write a report rather than guessing.
+          python3 - <<'PY'
+          from pathlib import Path
+          import subprocess
+          exp={}
+          for l in Path('/tmp/r7-blobs.tsv').read_text().splitlines():
+              s,p=l.split('\t',1); exp[p]=s
+          root=Path('/tmp/r7-work'); missing=[]; bad=[]
+          for rel,want in exp.items():
+              p=root/rel.removeprefix('AzerothAdmin/')
+              if not p.is_file(): missing.append(rel); continue
+              got=subprocess.check_output(['git','hash-object','--no-filters',str(p)],text=True).strip()
+              if got!=want: bad.append(f'{rel}\t{want}\t{got}')
+          Path('/tmp/R7_RECOVERY_REPORT.txt').write_text(f'missing={len(missing)} bad={len(bad)}\n'+'\n'.join(missing+bad)+'\n')
+          if missing or bad: raise SystemExit(f'R7 recovery incomplete: missing={len(missing)} bad={len(bad)}')
+          if len([p for p in root.rglob('*') if p.is_file()]) != 80: raise SystemExit('R7 file count != 80')
+          PY
+
+          rm -rf AzerothAdmin
+          mkdir AzerothAdmin
+          cp -a /tmp/r7-work/. AzerothAdmin/
+          cat .r11-sync/patch.part-*.b64 | base64 -d > /tmp/r11.patch.xz
+          echo '45d0f9ab4865ca2a1072848f95d09b03e8a896c915d4e26c3c78a0be57548e6c  /tmp/r11.patch.xz' | sha256sum -c -
+          xz -t /tmp/r11.patch.xz
+          xz -dc /tmp/r11.patch.xz > /tmp/r11.patch
+          applied=0
+          if git apply --check /tmp/r11.patch 2>/dev/null; then git apply /tmp/r11.patch; applied=1; fi
+          if test "$applied" = 0; then
+            for p in 0 1 2 3; do
+              if patch --dry-run -s -p$p < /tmp/r11.patch >/dev/null 2>&1; then patch -s -p$p < /tmp/r11.patch; applied=1; break; fi
+            done
+          fi
+          test "$applied" = 1
+          test "$(find AzerothAdmin -type f | wc -l | tr -d ' ')" = 86
+          test -f AzerothAdmin/USER_REGRESSION_R11.md
+          test -f AzerothAdmin/Modules/Integrations/BattlePetDeathPicker.lua
+
+      - name: Commit exact source or recovery report
+        if: always()
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          if test -f /tmp/R7_RECOVERY_REPORT.txt && grep -qv '^missing=0 bad=0$' /tmp/R7_RECOVERY_REPORT.txt; then
+            cp /tmp/R7_RECOVERY_REPORT.txt .r11-sync/R7_RECOVERY_REPORT.txt
+            git add .r11-sync/R7_RECOVERY_REPORT.txt
+          elif test -d AzerothAdmin && test "$(find AzerothAdmin -type f | wc -l | tr -d ' ')" = 86; then
+            rm -f .r11-sync/seed2.part-*.b64 .r11-sync/path-test.txt .r11-sync/direct-token-probe.txt .r11-sync/VERIFY_TRIGGER .r11-sync/RECOVER_TRIGGER .r11-sync/READY .r11-sync/patch.part-*.b64 .r11-sync/R7_RECOVERY_REPORT.txt
+            rm -f .github/workflows/apply-r11-source-sync.yml
+            printf 'EXACT_R11_SOURCE_RECOVERED\nfiles=86\n' > .r11-sync/EXACT_SOURCE_VERIFIED
+            git add -A
+          else
+            exit 0
+          fi
+          if ! git diff --cached --quiet; then
+            git commit -m 'Recover and verify exact R11 source'
+            git push origin HEAD:ai/chatgpt/r11-source-sync
+          fi
