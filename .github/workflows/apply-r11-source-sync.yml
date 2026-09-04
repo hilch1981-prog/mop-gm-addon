@@ -19,11 +19,36 @@ jobs:
         with:
           ref: ai/chatgpt/r11-source-sync
           fetch-depth: 0
-      - name: Print committed R7 addon blob manifest
+      - name: Fetch source-pinned R7 data extractors
         shell: bash
         run: |
           set -euo pipefail
-          r7='d9e7d68551726fb71957e06b50dc039ee63bd511'
-          git ls-tree -r "$r7" AzerothAdmin | tee /tmp/r7-tree.txt
-          printf 'r7_committed_files='
-          wc -l < /tmp/r7-tree.txt
+          git fetch origin ai/chatgpt/r5-quest-tele-performance:refs/remotes/origin/ai/chatgpt/r5-quest-tele-performance
+          mkdir -p /tmp/r7-tools
+          for file in extract_r5_mop_data.py extract_r5_mop_data_v2.py extract_r5_mop_data_v3.py extract_r7_mop_data.py patch_r7_objective_types.py; do
+            git show "origin/ai/chatgpt/r5-quest-tele-performance:tools/${file}" > "/tmp/r7-tools/${file}"
+          done
+      - name: Checkout pinned MOP_V2_Repack authority
+        uses: actions/checkout@v4
+        with:
+          repository: hilch1981-prog/MOP_V2_Repack
+          ref: 0739d072f8f1f42523f04cca4b2607d88a01def4
+          path: server
+          fetch-depth: 1
+      - name: Regenerate R7 authority files
+        shell: bash
+        run: |
+          set -euo pipefail
+          cp /tmp/r7-tools/*.py /tmp/
+          python /tmp/extract_r7_mop_data.py --server server --out /tmp/generated-r7
+          sha256sum /tmp/generated-r7/QuestLocations.lua /tmp/generated-r7/TeleportDbNames.lua /tmp/generated-r7/audit.json
+      - name: Upload regenerated authority files
+        uses: actions/upload-artifact@v4
+        with:
+          name: r7-regenerated-authority-files
+          path: |
+            /tmp/generated-r7/QuestLocations.lua
+            /tmp/generated-r7/TeleportDbNames.lua
+            /tmp/generated-r7/audit.json
+          if-no-files-found: error
+          retention-days: 7
