@@ -18,26 +18,22 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-      - name: Reconstruct retained v1 delta
+      - name: Inspect retained v1 delta chunks
         run: |
           set -euo pipefail
           git fetch origin release/v1.0.0-stable:refs/remotes/origin/release/v1.0.0-stable
-          mkdir -p /tmp/v1-seed /tmp/v1-delta
+          mkdir -p /tmp/v1-seed
           for n in 000 001 002 003; do
             git show "origin/release/v1.0.0-stable:.release-seed/v1-delta.part-${n}" > "/tmp/v1-seed/part-${n}"
+            echo "--- part-${n} ---"
+            wc -c "/tmp/v1-seed/part-${n}"
+            file "/tmp/v1-seed/part-${n}" || true
+            xxd -l 32 "/tmp/v1-seed/part-${n}" || true
+            sha256sum "/tmp/v1-seed/part-${n}"
           done
-          cat /tmp/v1-seed/part-* > /tmp/v1-delta.tar.xz
-          sha256sum /tmp/v1-delta.tar.xz | tee v1-delta-source.sha256
-          xz -t /tmp/v1-delta.tar.xz
-          tar -xJf /tmp/v1-delta.tar.xz -C /tmp/v1-delta
-          find /tmp/v1-delta -type f -printf '%P\n' | sort | tee v1-delta-files.txt
-          tar -cJf v1-delta-source.tar.xz -C /tmp/v1-delta .
-      - uses: actions/upload-artifact@v4
-        with:
-          name: v1-delta-source-snapshot
-          path: |
-            v1-delta-source.tar.xz
-            v1-delta-source.sha256
-            v1-delta-files.txt
-          if-no-files-found: error
-          retention-days: 7
+          cat /tmp/v1-seed/part-* > /tmp/v1-delta.bin
+          echo '--- concatenated ---'
+          wc -c /tmp/v1-delta.bin
+          file /tmp/v1-delta.bin || true
+          xxd -l 64 /tmp/v1-delta.bin || true
+          sha256sum /tmp/v1-delta.bin
