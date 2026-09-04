@@ -7,10 +7,12 @@ jobs:
   test:
     runs-on: ubuntu-latest
     steps:
-      - name: Download R10
+      - name: Download R10 with gdown
         run: |
           set -euxo pipefail
-          curl -L --fail --retry 2 'https://drive.usercontent.google.com/download?id=1PfqXo9cM6ZBbGBwYBXqFhykDYD61FaPM&export=download&confirm=t' -o /tmp/r10.zip
+          python -m pip install --quiet gdown
+          gdown --fuzzy 'https://drive.google.com/file/d/1PfqXo9cM6ZBbGBwYBXqFhykDYD61FaPM/view?usp=drivesdk' -O /tmp/r10.zip
           ls -l /tmp/r10.zip
           sha256sum /tmp/r10.zip
           echo 'b7e47b0eaff6a423efd3d176835c6bd969aecca4c88dd8da3526566cad7c8d0c  /tmp/r10.zip' | sha256sum -c -
+          unzip -tq /tmp/r10.zip
