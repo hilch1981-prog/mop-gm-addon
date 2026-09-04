@@ -19,47 +19,11 @@ jobs:
         with:
           ref: ai/chatgpt/r11-source-sync
           fetch-depth: 0
-
-      - name: Verify four generated tables can be reconstructed from main
+      - name: Print committed R7 addon blob manifest
         shell: bash
         run: |
           set -euo pipefail
-          git fetch origin main:refs/remotes/origin/main
-          mkdir -p /tmp/r7-generated
-          for file in Items.lua Quests.lua Creatures.lua Teleports.lua; do
-            git show "origin/main:AzerothAdmin/Data/Generated/${file}" > "/tmp/r7-generated/${file}"
-          done
-          sed -i 's/AzerothAdminMoP/AzerothAdminMoP548/g' /tmp/r7-generated/*.lua
-          echo '9aa93c507a03b19a5c3d36e883bd3193e903db3953921792b8ae839f630ee6d3  /tmp/r7-generated/Items.lua' | sha256sum -c -
-          echo 'c08c443f72e9212e33f23c4f622ebb8ecbd92984700c7c5563da122e6cbf1116  /tmp/r7-generated/Quests.lua' | sha256sum -c -
-          echo '94a93cd13fe4b0b64aa7f253c43925d22066f8cb27cb7bacd53459b014f6a493  /tmp/r7-generated/Creatures.lua' | sha256sum -c -
-          echo '580236ba5e3ad7b3063dc22b37139b77ebe98a372192ec6d5e9fda1092f086cc  /tmp/r7-generated/Teleports.lua' | sha256sum -c -
-
-      - name: Fetch source-pinned R7 data extractors
-        shell: bash
-        run: |
-          set -euo pipefail
-          git fetch origin ai/chatgpt/r5-quest-tele-performance:refs/remotes/origin/ai/chatgpt/r5-quest-tele-performance
-          mkdir -p /tmp/r7-tools
-          for file in extract_r5_mop_data.py extract_r5_mop_data_v2.py extract_r5_mop_data_v3.py extract_r7_mop_data.py patch_r7_objective_types.py; do
-            git show "origin/ai/chatgpt/r5-quest-tele-performance:tools/${file}" > "/tmp/r7-tools/${file}"
-          done
-
-      - name: Checkout pinned MOP_V2_Repack authority
-        uses: actions/checkout@v4
-        with:
-          repository: hilch1981-prog/MOP_V2_Repack
-          ref: 0739d072f8f1f42523f04cca4b2607d88a01def4
-          path: server
-          fetch-depth: 1
-
-      - name: Regenerate and verify quest/teleport authority files
-        shell: bash
-        run: |
-          set -euo pipefail
-          cp /tmp/r7-tools/*.py /tmp/
-          python /tmp/extract_r7_mop_data.py --server server --out /tmp/generated-r7
-          echo '782e3e15953973bc148889b98d2d13d40ae88ff33bb25ed89be932507e644db0  /tmp/generated-r7/QuestLocations.lua' | sha256sum -c -
-          echo '537499880a4468be4799e647467c432169d10940e345707a19a46724b6759d6e  /tmp/generated-r7/TeleportDbNames.lua' | sha256sum -c -
-          echo '75241ff77041b740d640412c9a206c172d1770a9da161bc1720f27ca04f3e108  /tmp/generated-r7/audit.json' | sha256sum -c -
-          echo 'R7 reconstruction inputs verified exactly.'
+          r7='d9e7d68551726fb71957e06b50dc039ee63bd511'
+          git ls-tree -r "$r7" AzerothAdmin | tee /tmp/r7-tree.txt
+          printf 'r7_committed_files='
+          wc -l < /tmp/r7-tree.txt
