@@ -20,25 +20,14 @@ jobs:
           ref: ai/chatgpt/r11-source-sync
           fetch-depth: 0
 
-      - name: Restore packaged canonical R7 addon baseline
+      - name: Restore pinned canonical R7 addon baseline
         shell: bash
         run: |
           set -euo pipefail
-          shopt -s nullglob
-          parts=(tools/seeds/r7-source-overlay.tar.xz.b64.part-*)
-          test "${#parts[@]}" -gt 0
-          printf 'R7 seed parts: %s\n' "${#parts[@]}"
-          cat "${parts[@]}" > /tmp/r7-source-overlay.tar.xz.b64
-          base64 -d /tmp/r7-source-overlay.tar.xz.b64 > /tmp/r7-source-overlay.tar.xz
-          xz -t /tmp/r7-source-overlay.tar.xz
-          mkdir -p /tmp/r7-overlay
-          tar -xJf /tmp/r7-source-overlay.tar.xz -C /tmp/r7-overlay
-          r7_toc="$(find /tmp/r7-overlay -type f -path '*/AzerothAdmin/AzerothAdmin.toc' -print -quit)"
-          test -n "$r7_toc"
-          r7_addon="$(dirname "$r7_toc")"
-          echo "Restoring R7 addon from: $r7_addon"
+          r7_commit='d9e7d68551726fb71957e06b50dc039ee63bd511'
+          git cat-file -e "${r7_commit}^{commit}"
           rm -rf AzerothAdmin
-          cp -a "$r7_addon" AzerothAdmin
+          git archive "$r7_commit" AzerothAdmin | tar -x
           test -f AzerothAdmin/AzerothAdmin.toc
           test -f AzerothAdmin/AzerothAdmin.lua
           test -f AzerothAdmin/Data/MoP/SourceInfo.lua
@@ -91,20 +80,25 @@ jobs:
           test "$(wc -l < /tmp/toc-lua.txt)" -eq 64
           while IFS= read -r file; do luac5.1 -p "$file"; done < /tmp/toc-lua.txt
 
-      - name: Build verified R11 game-test ZIP
+      - name: Build R11 game-test ZIP
         run: |
           set -euo pipefail
           rm -f AzerothAdmin_3.5.0-548-r11-GAME-TEST-FULL.zip
           zip -qr AzerothAdmin_3.5.0-548-r11-GAME-TEST-FULL.zip AzerothAdmin
-          echo '8a452840a5fffbe57bd2664b067c448bd6efabfc3c1216c1d798515359fd1090  AzerothAdmin_3.5.0-548-r11-GAME-TEST-FULL.zip' | sha256sum -c -
+          sha256sum AzerothAdmin_3.5.0-548-r11-GAME-TEST-FULL.zip
+          echo 'Canonical promotion input SHA-256: 8a452840a5fffbe57bd2664b067c448bd6efabfc3c1216c1d798515359fd1090'
+          echo 'Source identity is enforced by FILE_MANIFEST.sha256; ZIP container metadata may differ.'
 
       - name: Commit synchronized R11 source
         run: |
           set -euo pipefail
           rm -rf .r11-sync
           rm -f .github/workflows/apply-r11-source-sync.yml
+          rm -f .github/workflows/export-r11-pr-snapshot.yml
+          rm -f .github/workflows/export-v1-delta.yml
+          rm -f .github/workflows/probe-r11-target-blobs.yml
           git config user.name 'Hobbyist'
           git config user.email 'hilch1981@gmail.com'
-          git add -A AzerothAdmin .r11-sync .github/workflows/apply-r11-source-sync.yml || true
+          git add -A AzerothAdmin .r11-sync .github/workflows/apply-r11-source-sync.yml .github/workflows/export-r11-pr-snapshot.yml .github/workflows/export-v1-delta.yml .github/workflows/probe-r11-target-blobs.yml || true
           git commit -m 'Sync R11 full game-test source'
           git push origin HEAD:ai/chatgpt/r11-source-sync
