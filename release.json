@@ -1,0 +1,11 @@
+{
+  "key": "mop",
+  "repo": "mop-gm-addon",
+  "title": "MoP · SkyFire 계열",
+  "client": "WoW 5.4.8 (18414)",
+  "interface": 50400,
+  "lua": "5.1",
+  "asset": "GMminibar_MoP_5.4.8_v1.0.0.zip",
+  "version": "1.0.0",
+  "date": "2026-09-14"
+}

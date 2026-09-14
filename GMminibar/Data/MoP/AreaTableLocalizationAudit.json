@@ -1,0 +1,1010 @@
+{
+  "source": "AreaTable.csv",
+  "sha256": "f893631d8314d05ad7649ca68ef55bb9c2b99cbc66d7f8991e81e6dcc847a8d5",
+  "area_rows_used": 3753,
+  "teleport_rows": 1602,
+  "placeholder_before": 754,
+  "localized_direct": 634,
+  "localized_alias": 5,
+  "raw_name_fallback": 115,
+  "placeholder_after": 0,
+  "examples": [
+    {
+      "id": 1,
+      "raw": "AB",
+      "old": "전장/투기장 위치 01",
+      "new": "아라시 분지",
+      "map": 529,
+      "source": "alias"
+    },
+    {
+      "id": 3,
+      "raw": "AbyssalSands",
+      "old": "타나리스 위치 01",
+      "new": "끝없는 사막",
+      "map": 1,
+      "source": "AreaTable"
+    },
+    {
+      "id": 7,
+      "raw": "AeriePeak",
+      "old": "동부 내륙지 위치 01",
+      "new": "맹금의 봉우리",
+      "map": 0,
+      "source": "AreaTable"
+    },
+    {
+      "id": 9,
+      "raw": "FieldsOfBlood",
+      "old": "불모의 땅 위치 10",
+      "new": "피의 들판",
+      "map": 1,
+      "source": "AreaTable"
+    },
+    {
+      "id": 12,
+      "raw": "AgolWatha",
+      "old": "동부 내륙지 위치 02",
+      "new": "아골와타",
+      "map": 0,
+      "source": "AreaTable"
+    },
+    {
+      "id": 13,
+      "raw": "AlcazIsland",
+      "old": "먼지진흙 습지대 위치 01",
+      "new": "알카즈 섬",
+      "map": 1,
+      "source": "AreaTable"
+    },
+    {
+      "id": 22,
+      "raw": "AlteracMountains",
+      "old": "힐스브래드구릉지 위치 01",
+      "new": "알터랙 산맥",
+      "map": 0,
+      "source": "AreaTable"
+    },
+    {
+      "id": 23,
+      "raw": "AlteracValley",
+      "old": "알터랙 계곡 - 전장 위치 01",
+      "new": "알터랙 계곡",
+      "map": 30,
+      "source": "AreaTable"
+    },
+    {
+      "id": 27,
+      "raw": "AmaniCatacombs",
+      "old": "유령의땅 위치 01",
+      "new": "아마니 지하묘지",
+      "map": 530,
+      "source": "AreaTable"
+    },
+    {
+      "id": 30,
+      "raw": "AmberstillRanch",
+      "old": "던 모로 위치 01",
+      "new": "앰버스틸 목장",
+      "map": 0,
+      "source": "AreaTable"
+    },
+    {
+      "id": 31,
+      "raw": "AmberwebPass",
+      "old": "피빛안개 섬 위치 01",
+      "new": "호박그물 고개",
+      "map": 530,
+      "source": "AreaTable"
+    },
+    {
+      "id": 35,
+      "raw": "AmmenVale",
+      "old": "하늘안개 섬 위치 01",
+      "new": "암멘 골짜기",
+      "map": 530,
+      "source": "AreaTable"
+    },
+    {
+      "id": 39,
+      "raw": "AngerfangEncampment",
+      "old": "저습지 위치 01",
+      "new": "성난송곳니 야영지",
+      "map": 0,
+      "source": "AreaTable"
+    },
+    {
+      "id": 41,
+      "raw": "AngoRoshGrounds",
+      "old": "장가르 습지대 위치 01",
+      "new": "앙고로쉬 영토",
+      "map": 530,
+      "source": "AreaTable"
+    },
+    {
+      "id": 48,
+      "raw": "ArathiBasin",
+      "old": "전장/투기장 위치 02",
+      "new": "아라시 분지",
+      "map": 529,
+      "source": "AreaTable"
+    },
+    {
+      "id": 51,
+      "raw": "ArathiHighlands",
+      "old": "아라시고원 위치 01",
+      "new": "아라시 고원",
+      "map": 0,
+      "source": "AreaTable"
+    },
+    {
+      "id": 57,
+      "raw": "Ashenvale",
+      "old": "잿빛 골짜기 위치 01",
+      "new": "잿빛 골짜기",
+      "map": 1,
+      "source": "AreaTable"
+    },
+    {
+      "id": 61,
+      "raw": "AuchenaiCrypts",
+      "old": "테로카르 숲 위치 01",
+      "new": "아키나이 납골당",
+      "map": 530,
+      "source": "AreaTable"
+    },
+    {
+      "id": 62,
+      "raw": "AuchenaiGrounds",
+      "old": "테로카르 숲 위치 02",
+      "new": "아키나이 영지",
+      "map": 530,
+      "source": "AreaTable"
+    },
+    {
+      "id": 64,
+      "raw": "AV",
+      "old": "알터랙 계곡 - 전장 위치 04",
+      "new": "알터랙 계곡",
+      "map": 30,
+      "source": "alias"
+    }
+  ],
+  "unmatched": [
+    {
+      "id": 24,
+      "raw": "AlteracValleyAlliance",
+      "map": 30,
+      "old": "알터랙 계곡 - 전장 위치 02",
+      "fallback": "알터랙 계곡 - 전장 · AlteracValleyAlliance"
+    },
+    {
+      "id": 25,
+      "raw": "AlteracValleyHorde",
+      "map": 30,
+      "old": "알터랙 계곡 - 전장 위치 03",
+      "fallback": "알터랙 계곡 - 전장 · AlteracValleyHorde"
+    },
+    {
+      "id": 49,
+      "raw": "ArathiBasinAlliance",
+      "map": 529,
+      "old": "전장/투기장 위치 03",
+      "fallback": "전장/투기장 · ArathiBasinAlliance"
+    },
+    {
+      "id": 50,
+      "raw": "ArathiBasinHorde",
+      "map": 529,
+      "old": "전장/투기장 위치 04",
+      "fallback": "전장/투기장 · ArathiBasinHorde"
+    },
+    {
+      "id": 82,
+      "raw": "Barrens",
+      "map": 1,
+      "old": "불모의 땅 위치 02",
+      "fallback": "불모의 땅 · Barrens"
+    },
+    {
+      "id": 107,
+      "raw": "BlackthornRidge",
+      "map": 1,
+      "old": "불모의 땅 위치 03",
+      "fallback": "불모의 땅 · BlackthornRidge"
+    },
+    {
+      "id": 123,
+      "raw": "BladspireOutpost",
+      "map": 530,
+      "old": "칼날산맥 위치 06",
+      "fallback": "칼날산맥 · BladspireOutpost"
+    },
+    {
+      "id": 152,
+      "raw": "BoulderfistOuspost",
+      "map": 0,
+      "old": "아라시고원 위치 03",
+      "fallback": "아라시고원 · BoulderfistOuspost"
+    },
+    {
+      "id": 153,
+      "raw": "BoulderfistOutpost",
+      "map": 0,
+      "old": "아라시고원 위치 04",
+      "fallback": "아라시고원 · BoulderfistOutpost"
+    },
+    {
+      "id": 233,
+      "raw": "Crypt",
+      "map": 0,
+      "old": "죽음의 고개 위치 01",
+      "fallback": "죽음의 고개 · Crypt"
+    },
+    {
+      "id": 277,
+      "raw": "DigOne",
+      "map": 0,
+      "old": "황야의 땅 위치 04",
+      "fallback": "황야의 땅 · DigOne"
+    },
+    {
+      "id": 279,
+      "raw": "DireMaulEast",
+      "map": 1,
+      "old": "페랄라스 위치 02",
+      "fallback": "페랄라스 · DireMaulEast"
+    },
+    {
+      "id": 282,
+      "raw": "Dmeast",
+      "map": 429,
+      "old": "혈투의 전장 - 동쪽 위치 01",
+      "fallback": "혈투의 전장 - 동쪽 · Dmeast"
+    },
+    {
+      "id": 284,
+      "raw": "Dmwest",
+      "map": 429,
+      "old": "혈투의 전장 - 서측 위치 01",
+      "fallback": "혈투의 전장 - 서측 · Dmwest"
+    },
+    {
+      "id": 309,
+      "raw": "DurotarZeppelin",
+      "map": 1,
+      "old": "듀로타 위치 06",
+      "fallback": "듀로타 · DurotarZeppelin"
+    },
+    {
+      "id": 327,
+      "raw": "EchonokCaver",
+      "map": 70,
+      "old": "울다만 위치 01",
+      "fallback": "울다만 · EchonokCaver"
+    },
+    {
+      "id": 334,
+      "raw": "EldrethRow",
+      "map": 1,
+      "old": "페랄라스 위치 03",
+      "fallback": "페랄라스 · EldrethRow"
+    },
+    {
+      "id": 347,
+      "raw": "ExcavationCenter",
+      "map": 0,
+      "old": "황야의 땅 위치 06",
+      "fallback": "황야의 땅 · ExcavationCenter"
+    },
+    {
+      "id": 352,
+      "raw": "EyeOfTheStormAlliance",
+      "map": 566,
+      "old": "전장/투기장 위치 07",
+      "fallback": "전장/투기장 · EyeOfTheStormAlliance"
+    },
+    {
+      "id": 353,
+      "raw": "EyeOfTheStormHorde",
+      "map": 566,
+      "old": "전장/투기장 위치 08",
+      "fallback": "전장/투기장 · EyeOfTheStormHorde"
+    },
+    {
+      "id": 370,
+      "raw": "FearScarVale",
+      "map": 1,
+      "old": "페랄라스 위치 04",
+      "fallback": "페랄라스 · FearScarVale"
+    },
+    {
+      "id": 382,
+      "raw": "FieldOfGiants",
+      "map": 1,
+      "old": "불모의 땅 위치 09",
+      "fallback": "불모의 땅 · FieldOfGiants"
+    },
+    {
+      "id": 415,
+      "raw": "GarrisonArmory",
+      "map": 0,
+      "old": "저주받은 땅 위치 02",
+      "fallback": "저주받은 땅 · GarrisonArmory"
+    },
+    {
+      "id": 427,
+      "raw": "Gnomeregan",
+      "map": 0,
+      "old": "놈리건 위치 01",
+      "fallback": "놈리건 · Gnomeregan"
+    },
+    {
+      "id": 468,
+      "raw": "HallOfTheCrafters",
+      "map": 70,
+      "old": "울다만 위치 02",
+      "fallback": "울다만 · HallOfTheCrafters"
+    },
+    {
+      "id": 475,
+      "raw": "HellfirePeninsula",
+      "map": 530,
+      "old": "지옥불 반도 위치 04",
+      "fallback": "지옥불 반도 · HellfirePeninsula"
+    },
+    {
+      "id": 503,
+      "raw": "IrisLake",
+      "map": 1,
+      "old": "잿빛 골짜기 위치 13",
+      "fallback": "잿빛 골짜기 · IrisLake"
+    },
+    {
+      "id": 528,
+      "raw": "JoredsLanding",
+      "map": 0,
+      "old": "엘윈 숲 위치 07",
+      "fallback": "엘윈 숲 · JoredsLanding"
+    },
+    {
+      "id": 540,
+      "raw": "KolgarCrag",
+      "map": 1,
+      "old": "듀로타 위치 09",
+      "fallback": "듀로타 · KolgarCrag"
+    },
+    {
+      "id": 541,
+      "raw": "KolgarVillage",
+      "map": 1,
+      "old": "잊혀진 땅 위치 06",
+      "fallback": "잊혀진 땅 · KolgarVillage"
+    },
+    {
+      "id": 544,
+      "raw": "LakeAlAmeth",
+      "map": 1,
+      "old": "텔드랏실 위치 02",
+      "fallback": "텔드랏실 · LakeAlAmeth"
+    },
+    {
+      "id": 570,
+      "raw": "LordamareLake",
+      "map": 0,
+      "old": "언더시티 위치 01",
+      "fallback": "언더시티 · LordamareLake"
+    },
+    {
+      "id": 574,
+      "raw": "LothosRiftwaker",
+      "map": 0,
+      "old": "이글거리는 협곡 위치 07",
+      "fallback": "이글거리는 협곡 · LothosRiftwaker"
+    },
+    {
+      "id": 600,
+      "raw": "MapChamber",
+      "map": 70,
+      "old": "울다만 위치 03",
+      "fallback": "울다만 · MapChamber"
+    },
+    {
+      "id": 604,
+      "raw": "MaraudonOrange",
+      "map": 1,
+      "old": "잊혀진 땅 위치 09",
+      "fallback": "잊혀진 땅 · MaraudonOrange"
+    },
+    {
+      "id": 605,
+      "raw": "MaraudonPurple",
+      "map": 1,
+      "old": "잊혀진 땅 위치 10",
+      "fallback": "잊혀진 땅 · MaraudonPurple"
+    },
+    {
+      "id": 637,
+      "raw": "MoongladeHordeFlypoint",
+      "map": 1,
+      "old": "달의 숲 위치 03",
+      "fallback": "달의 숲 · MoongladeHordeFlypoint"
+    },
+    {
+      "id": 688,
+      "raw": "NorthTidesHollow",
+      "map": 0,
+      "old": "은빛소나무숲 위치 04",
+      "fallback": "은빛소나무숲 · NorthTidesHollow"
+    },
+    {
+      "id": 701,
+      "raw": "OrbOfCommand",
+      "map": 0,
+      "old": "이글거리는 협곡 위치 08",
+      "fallback": "이글거리는 협곡 · OrbOfCommand"
+    },
+    {
+      "id": 730,
+      "raw": "RaptorGrounds",
+      "map": 1,
+      "old": "불모의 땅 위치 16",
+      "fallback": "불모의 땅 · RaptorGrounds"
+    },
+    {
+      "id": 755,
+      "raw": "RedridgeCanyons",
+      "map": 0,
+      "old": "붉은마루 산맥 위치 02",
+      "fallback": "붉은마루 산맥 · RedridgeCanyons"
+    },
+    {
+      "id": 792,
+      "raw": "RuinsOfThaurissan",
+      "map": 0,
+      "old": "불타는 평원 위치 05",
+      "fallback": "불타는 평원 · RuinsOfThaurissan"
+    },
+    {
+      "id": 795,
+      "raw": "RuinsOfZulManwe",
+      "map": 0,
+      "old": "가시덤불골짜기 위치 17",
+      "fallback": "가시덤불골짜기 · RuinsOfZulManwe"
+    },
+    {
+      "id": 927,
+      "raw": "SSC",
+      "map": 548,
+      "old": "갈퀴송곳니 저수지 위치 02",
+      "fallback": "갈퀴송곳니 저수지 · SSC"
+    },
+    {
+      "id": 942,
+      "raw": "StoneCairnLake",
+      "map": 0,
+      "old": "엘윈 숲 위치 12",
+      "fallback": "엘윈 숲 · StoneCairnLake"
+    },
+    {
+      "id": 957,
+      "raw": "Strat",
+      "map": 329,
+      "old": "스트라솔름 위치 01",
+      "fallback": "스트라솔름 · Strat"
+    },
+    {
+      "id": 1005,
+      "raw": "ThalassianBaseCamp",
+      "map": 1,
+      "old": "아즈샤라 위치 12",
+      "fallback": "아즈샤라 · ThalassianBaseCamp"
+    },
+    {
+      "id": 1015,
+      "raw": "TheBazaar",
+      "map": 530,
+      "old": "실버문 위치 01",
+      "fallback": "실버문 · TheBazaar"
+    },
+    {
+      "id": 1024,
+      "raw": "TheCharredValed",
+      "map": 1,
+      "old": "돌발톱 산맥 위치 16",
+      "fallback": "돌발톱 산맥 · TheCharredValed"
+    },
+    {
+      "id": 1026,
+      "raw": "TheCorners",
+      "map": 0,
+      "old": "붉은마루 산맥 위치 07",
+      "fallback": "붉은마루 산맥 · TheCorners"
+    },
+    {
+      "id": 1037,
+      "raw": "TheDarkPortalOutland",
+      "map": 530,
+      "old": "지옥불 반도 위치 12",
+      "fallback": "지옥불 반도 · TheDarkPortalOutland"
+    },
+    {
+      "id": 1053,
+      "raw": "TheDustbowl",
+      "map": 0,
+      "old": "황야의 땅 위치 11",
+      "fallback": "황야의 땅 · TheDustbowl"
+    },
+    {
+      "id": 1056,
+      "raw": "TheEye",
+      "map": 530,
+      "old": "황천의 폭풍 위치 14",
+      "fallback": "황천의 폭풍 · TheEye"
+    },
+    {
+      "id": 1066,
+      "raw": "TheGreatArena",
+      "map": 0,
+      "old": "가시덤불골짜기 위치 22",
+      "fallback": "가시덤불골짜기 · TheGreatArena"
+    },
+    {
+      "id": 1072,
+      "raw": "TheGrindingQuarry",
+      "map": 0,
+      "old": "이글거리는 협곡 위치 12",
+      "fallback": "이글거리는 협곡 · TheGrindingQuarry"
+    },
+    {
+      "id": 1106,
+      "raw": "TheMoltenSpan",
+      "map": 0,
+      "old": "이글거리는 협곡 위치 13",
+      "fallback": "이글거리는 협곡 · TheMoltenSpan"
+    },
+    {
+      "id": 1121,
+      "raw": "Theramore",
+      "map": 1,
+      "old": "먼지진흙 습지대 위치 12",
+      "fallback": "먼지진흙 습지대 · Theramore"
+    },
+    {
+      "id": 1130,
+      "raw": "TheRuinsOfAhnQiraj",
+      "map": 1,
+      "old": "실리더스 위치 07",
+      "fallback": "실리더스 · TheRuinsOfAhnQiraj"
+    },
+    {
+      "id": 1139,
+      "raw": "TheScaradWalp",
+      "map": 1,
+      "old": "실리더스 위치 10",
+      "fallback": "실리더스 · TheScaradWalp"
+    },
+    {
+      "id": 1174,
+      "raw": "TheTempleOfAhnQiraj",
+      "map": 1,
+      "old": "실리더스 위치 12",
+      "fallback": "실리더스 · TheTempleOfAhnQiraj"
+    },
+    {
+      "id": 1191,
+      "raw": "TheWailingCaverns",
+      "map": 1,
+      "old": "불모의 땅 위치 23",
+      "fallback": "불모의 땅 · TheWailingCaverns"
+    },
+    {
+      "id": 1255,
+      "raw": "TyrsHandAbbey",
+      "map": 0,
+      "old": "동부역병 지대 위치 10",
+      "fallback": "동부역병 지대 · TyrsHandAbbey"
+    },
+    {
+      "id": 1301,
+      "raw": "VortexPinnacle",
+      "map": 530,
+      "old": "칼날산맥 위치 27",
+      "fallback": "칼날산맥 · VortexPinnacle"
+    },
+    {
+      "id": 1310,
+      "raw": "WarsongGulchAlliance",
+      "map": 489,
+      "old": "전장/투기장 위치 10",
+      "fallback": "전장/투기장 · WarsongGulchAlliance"
+    },
+    {
+      "id": 1311,
+      "raw": "WarsongGulchHorde",
+      "map": 489,
+      "old": "전장/투기장 위치 11",
+      "fallback": "전장/투기장 · WarsongGulchHorde"
+    },
+    {
+      "id": 1405,
+      "raw": "StormPeaks",
+      "map": 571,
+      "old": "폭풍우 봉우리 위치 02",
+      "fallback": "폭풍우 봉우리 · StormPeaks"
+    },
+    {
+      "id": 1409,
+      "raw": "WizardsSanctum",
+      "map": 0,
+      "old": "스톰윈드 위치 04",
+      "fallback": "스톰윈드 · WizardsSanctum"
+    },
+    {
+      "id": 1414,
+      "raw": "ArgentTournament",
+      "map": 571,
+      "old": "폭풍우 봉우리 위치 01",
+      "fallback": "폭풍우 봉우리 · ArgentTournament"
+    },
+    {
+      "id": 1418,
+      "raw": "IcecrownCitadelRaid",
+      "map": 571,
+      "old": "겨울손아귀 호수 위치 01",
+      "fallback": "겨울손아귀 호수 · IcecrownCitadelRaid"
+    },
+    {
+      "id": 1421,
+      "raw": "ChamberOfAspects",
+      "map": 571,
+      "old": "용의 안식처 위치 01",
+      "fallback": "용의 안식처 · ChamberOfAspects"
+    },
+    {
+      "id": 1424,
+      "raw": "Jail",
+      "map": 1,
+      "old": "기타 위치 01",
+      "fallback": "기타 · Jail"
+    },
+    {
+      "id": 1436,
+      "raw": "NewTinkertown",
+      "map": 0,
+      "old": "던 모로 위치 07",
+      "fallback": "던 모로 · NewTinkertown"
+    },
+    {
+      "id": 1444,
+      "raw": "NorthStranglethorn",
+      "map": 0,
+      "old": "가시덤불골짜기 위치 13",
+      "fallback": "가시덤불골짜기 · NorthStranglethorn"
+    },
+    {
+      "id": 1447,
+      "raw": "TolBaradPeninsula",
+      "map": 732,
+      "old": "대격변 지역 위치 06",
+      "fallback": "대격변 지역 · TolBaradPeninsula"
+    },
+    {
+      "id": 1453,
+      "raw": "DarkmoonFaire",
+      "map": 974,
+      "old": "기타 지역 위치 03",
+      "fallback": "기타 지역 · DarkmoonFaire"
+    },
+    {
+      "id": 1465,
+      "raw": "FlamestarPost",
+      "map": 0,
+      "old": "불타는 평원 위치 04",
+      "fallback": "불타는 평원 · FlamestarPost"
+    },
+    {
+      "id": 1483,
+      "raw": "NorthernBarrens",
+      "map": 1,
+      "old": "불모의 땅 위치 14",
+      "fallback": "불모의 땅 · NorthernBarrens"
+    },
+    {
+      "id": 1493,
+      "raw": "MountHyjal",
+      "map": 1,
+      "old": "하이잘 위치 03",
+      "fallback": "하이잘 · MountHyjal"
+    },
+    {
+      "id": 1499,
+      "raw": "SouthernRocketway",
+      "map": 1,
+      "old": "아즈샤라 위치 09",
+      "fallback": "아즈샤라 · SouthernRocketway"
+    },
+    {
+      "id": 1513,
+      "raw": "ShimmeringExpanse",
+      "map": 0,
+      "old": "동부 왕국 위치 09",
+      "fallback": "동부 왕국 · ShimmeringExpanse"
+    },
+    {
+      "id": 1517,
+      "raw": "AbyssalDepth",
+      "map": 0,
+      "old": "동부 왕국 위치 01",
+      "fallback": "동부 왕국 · AbyssalDepth"
+    },
+    {
+      "id": 1525,
+      "raw": "TrialOfTheCrusader",
+      "map": 571,
+      "old": "폭풍우 봉우리 위치 04",
+      "fallback": "폭풍우 봉우리 · TrialOfTheCrusader"
+    },
+    {
+      "id": 1526,
+      "raw": "TrialOfTheChampion",
+      "map": 571,
+      "old": "폭풍우 봉우리 위치 03",
+      "fallback": "폭풍우 봉우리 · TrialOfTheChampion"
+    },
+    {
+      "id": 1531,
+      "raw": "ThroneoftheTides",
+      "map": 0,
+      "old": "동부 왕국 위치 14",
+      "fallback": "동부 왕국 · ThroneoftheTides"
+    },
+    {
+      "id": 1532,
+      "raw": "EndTime",
+      "map": 1,
+      "old": "시간의 동굴 위치 01",
+      "fallback": "시간의 동굴 · EndTime"
+    },
+    {
+      "id": 1542,
+      "raw": "Vashj'irAbyssalDepths",
+      "map": 0,
+      "old": "동부 왕국 위치 16",
+      "fallback": "동부 왕국 · Vashj'irAbyssalDepths"
+    },
+    {
+      "id": 1544,
+      "raw": "Vashj'irShimmeringExpanse",
+      "map": 0,
+      "old": "동부 왕국 위치 18",
+      "fallback": "동부 왕국 · Vashj'irShimmeringExpanse"
+    },
+    {
+      "id": 1817,
+      "raw": "ThroneofThunder",
+      "map": 1064,
+      "old": "판다리아 위치 15",
+      "fallback": "판다리아 · ThroneofThunder"
+    },
+    {
+      "id": 1825,
+      "raw": "BrewingStorm",
+      "map": 1005,
+      "old": "판다리아 위치 03",
+      "fallback": "판다리아 · BrewingStorm"
+    },
+    {
+      "id": 1826,
+      "raw": "TheramoresFallH",
+      "map": 999,
+      "old": "판다리아 위치 14",
+      "fallback": "판다리아 · TheramoresFallH"
+    },
+    {
+      "id": 1828,
+      "raw": "CryptOfForgottenKings",
+      "map": 1030,
+      "old": "판다리아 위치 05",
+      "fallback": "판다리아 · CryptOfForgottenKings"
+    },
+    {
+      "id": 1832,
+      "raw": "BrewmoonFestival",
+      "map": 1051,
+      "old": "판다리아 위치 04",
+      "fallback": "판다리아 · BrewmoonFestival"
+    },
+    {
+      "id": 1833,
+      "raw": "DaggerInTheDark",
+      "map": 1095,
+      "old": "기타 지역 위치 01",
+      "fallback": "기타 지역 · DaggerInTheDark"
+    },
+    {
+      "id": 1835,
+      "raw": "DominationPoint",
+      "map": 1102,
+      "old": "판다리아 위치 06",
+      "fallback": "판다리아 · DominationPoint"
+    },
+    {
+      "id": 1836,
+      "raw": "LionsLanding",
+      "map": 1103,
+      "old": "판다리아 위치 07",
+      "fallback": "판다리아 · LionsLanding"
+    },
+    {
+      "id": 1837,
+      "raw": "LittlePatience",
+      "map": 1004,
+      "old": "판다리아 위치 08",
+      "fallback": "판다리아 · LittlePatience"
+    },
+    {
+      "id": 1838,
+      "raw": "BloodInTheSnow",
+      "map": 1130,
+      "old": "판다리아 위치 01",
+      "fallback": "판다리아 · BloodInTheSnow"
+    },
+    {
+      "id": 1839,
+      "raw": "SecretsOfRagefire",
+      "map": 1131,
+      "old": "기타 지역 위치 11",
+      "fallback": "기타 지역 · SecretsOfRagefire"
+    },
+    {
+      "id": 1840,
+      "raw": "ThunderKingsCitadel",
+      "map": 1135,
+      "old": "기타 지역 위치 15",
+      "fallback": "기타 지역 · ThunderKingsCitadel"
+    },
+    {
+      "id": 1843,
+      "raw": "BrawlersGuildA",
+      "map": 369,
+      "old": "스톰윈드 위치 01",
+      "fallback": "스톰윈드 · BrawlersGuildA"
+    },
+    {
+      "id": 1844,
+      "raw": "TheramoresFallA",
+      "map": 1000,
+      "old": "판다리아 위치 13",
+      "fallback": "판다리아 · TheramoresFallA"
+    },
+    {
+      "id": 1845,
+      "raw": "TheLostIslands",
+      "map": 648,
+      "old": "기타 지역 위치 12",
+      "fallback": "기타 지역 · TheLostIslands"
+    },
+    {
+      "id": 1846,
+      "raw": "Pursuing the Black Harvest: Warlock Questline",
+      "map": 1112,
+      "old": "판다리아 위치 09",
+      "fallback": "판다리아 · Pursuing the Black Harvest: Warlock Questline"
+    },
+    {
+      "id": 1847,
+      "raw": "Thunder Forges: 5.2 Legendary Questline",
+      "map": 1126,
+      "old": "판다리아 위치 16",
+      "fallback": "판다리아 · Thunder Forges: 5.2 Legendary Questline"
+    },
+    {
+      "id": 1848,
+      "raw": "Thunder Kings Citadel: Weekly",
+      "map": 1135,
+      "old": "기타 지역 위치 14",
+      "fallback": "기타 지역 · Thunder Kings Citadel: Weekly"
+    },
+    {
+      "id": 1849,
+      "raw": "The Fall of Shan Bu: Alliance",
+      "map": 1126,
+      "old": "판다리아 위치 11",
+      "fallback": "판다리아 · The Fall of Shan Bu: Alliance"
+    },
+    {
+      "id": 1850,
+      "raw": "The Fall of Shan Bu: Horde",
+      "map": 1126,
+      "old": "판다리아 위치 12",
+      "fallback": "판다리아 · The Fall of Shan Bu: Horde"
+    },
+    {
+      "id": 1853,
+      "raw": "To the Skies!: Horde",
+      "map": 1126,
+      "old": "판다리아 위치 18",
+      "fallback": "판다리아 · To the Skies!: Horde"
+    },
+    {
+      "id": 1854,
+      "raw": "To the Skies!: Alliance",
+      "map": 1126,
+      "old": "판다리아 위치 17",
+      "fallback": "판다리아 · To the Skies!: Alliance"
+    },
+    {
+      "id": 1855,
+      "raw": "TearDownThisWall (both)",
+      "map": 1126,
+      "old": "판다리아 위치 10",
+      "fallback": "판다리아 · TearDownThisWall (both)"
+    },
+    {
+      "id": 1857,
+      "raw": "SecretIngridient",
+      "map": 1157,
+      "old": "기타 지역 위치 10",
+      "fallback": "기타 지역 · SecretIngridient"
+    },
+    {
+      "id": 1858,
+      "raw": "RagefireSecrets",
+      "map": 1131,
+      "old": "기타 지역 위치 09",
+      "fallback": "기타 지역 · RagefireSecrets"
+    },
+    {
+      "id": 1859,
+      "raw": "BloodInTheSnow",
+      "map": 1130,
+      "old": "판다리아 위치 02",
+      "fallback": "판다리아 · BloodInTheSnow"
+    },
+    {
+      "id": 1861,
+      "raw": "ProvingGroundsScenario",
+      "map": 1148,
+      "old": "기타 지역 위치 08",
+      "fallback": "기타 지역 · ProvingGroundsScenario"
+    },
+    {
+      "id": 1862,
+      "raw": "DaggerInTheDark",
+      "map": 1095,
+      "old": "기타 지역 위치 02",
+      "fallback": "기타 지역 · DaggerInTheDark"
+    }
+  ],
+  "strategy": "R7 localized baseline + AreaTable.csv overlay for numbered placeholders only",
+  "area_overlay_upgrades": 639,
+  "legacy_fallbacks_preserved": 105,
+  "unsafe_debug_teleports_disabled": [
+    {
+      "id": 817,
+      "raw": "ScottTest",
+      "display": "시험 지역 - 넓음"
+    }
+  ],
+  "mixed_language_cleanup": {
+    "495": "하이잘 정상 - 동쪽 입구",
+    "616": "마법학자의 정원 - 내부"
+  },
+  "placeholder_after_merge": 105,
+  "english_raw_fallback_after_merge": 0,
+  "manual_verified_upgrades": 10,
+  "other_region_placeholder_after_merge": 0,
+  "manual_verified_names": {
+    "1453": "다크문 축제",
+    "1833": "어둠 속의 비수",
+    "1862": "어둠 속의 비수",
+    "1839": "성난불길의 비밀",
+    "1858": "성난불길의 비밀",
+    "1840": "천둥왕의 성채",
+    "1848": "천둥왕의 성채 - 주간",
+    "1845": "잃어버린 섬",
+    "1857": "비밀 재료",
+    "1861": "수련의 장"
+  }
+}

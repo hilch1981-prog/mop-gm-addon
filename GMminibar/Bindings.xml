@@ -1,0 +1,13 @@
+<Bindings>
+  <Binding name="GMMINIBARMOP548_1" header="GMMINIBARMOP548_HEADER">AzerothAdminMoP548:ActivateMiniBar(1)</Binding>
+  <Binding name="GMMINIBARMOP548_2">AzerothAdminMoP548:ActivateMiniBar(2)</Binding>
+  <Binding name="GMMINIBARMOP548_3">AzerothAdminMoP548:ActivateMiniBar(3)</Binding>
+  <Binding name="GMMINIBARMOP548_4">AzerothAdminMoP548:ActivateMiniBar(4)</Binding>
+  <Binding name="GMMINIBARMOP548_5">AzerothAdminMoP548:ActivateMiniBar(5)</Binding>
+  <Binding name="GMMINIBARMOP548_6">AzerothAdminMoP548:ActivateMiniBar(6)</Binding>
+  <Binding name="GMMINIBARMOP548_7">AzerothAdminMoP548:ActivateMiniBar(7)</Binding>
+  <Binding name="GMMINIBARMOP548_8">AzerothAdminMoP548:ActivateMiniBar(8)</Binding>
+  <Binding name="GMMINIBARMOP548_9">AzerothAdminMoP548:ActivateMiniBar(9)</Binding>
+  <Binding name="GMMINIBARMOP548_10">AzerothAdminMoP548:ActivateMiniBar(10)</Binding>
+  <Binding name="GMMINIBARMOP548_11">AzerothAdminMoP548:ActivateMiniBar(11)</Binding>
+</Bindings>

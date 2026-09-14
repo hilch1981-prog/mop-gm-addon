@@ -1,0 +1,30 @@
+{
+  "source_revision": "0739d072f8f1f42523f04cca4b2607d88a01def4",
+  "table_rows": {
+    "creature": 314962,
+    "creature_loot_template": 659757,
+    "creature_questender": 12448,
+    "creature_queststarter": 11942,
+    "creature_template": 57526,
+    "game_tele": 1602,
+    "gameobject": 170156,
+    "gameobject_loot_template": 11466,
+    "gameobject_questender": 688,
+    "gameobject_queststarter": 950,
+    "gameobject_template": 34362,
+    "locales_creature": 629374,
+    "locales_gameobject": 27973,
+    "quest_objective": 17686,
+    "quest_template": 18144
+  },
+  "quest_records": 15794,
+  "objective_slots": 17686,
+  "coordinate_objectives": 7637,
+  "quest_starters": 12892,
+  "quest_enders": 13136,
+  "creature_spawn_entries": 33284,
+  "gameobject_spawn_entries": 24184,
+  "teleport_names": 1602,
+  "korean_creature_names": 61500,
+  "korean_gameobject_names": 949
+}
